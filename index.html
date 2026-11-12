@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>mars-globe – 3D Mars Globe for CesiumJS</title>
+  <meta name="description" content="mars-globe is a drop-in 3D Mars globe for CesiumJS: Mars IAU 2000 ellipsoid, four NASA Mars Trek basemaps and no Cesium Ion token. Use it as an npm module, a &lt;mars-globe&gt; Web Component or a Cesium plugin." />
+  <meta name="keywords" content="mars globe, 3d mars globe, cesium mars, cesiumjs mars, mars map javascript, mars web component, nasa mars trek, mola, viking, themis, npm" />
+  <link rel="canonical" href="https://aaron43210.github.io/mars-globe/" />
+  <link rel="icon" type="image/png" href="img/icon.png" />
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png" />
+  <meta name="theme-color" content="#0b0e14" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="mars-globe – 3D Mars Globe for CesiumJS" />
+  <meta property="og:description" content="A drop-in 3D Mars globe for CesiumJS. NASA Mars Trek basemaps, Mars ellipsoid, no Ion token. npm install mars-globe cesium" />
+  <meta property="og:url" content="https://aaron43210.github.io/mars-globe/" />
+  <meta property="og:image" content="https://aaron43210.github.io/mars-globe/img/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="mars-globe – 3D Mars Globe for CesiumJS" />
+  <meta name="twitter:description" content="A drop-in 3D Mars globe for CesiumJS. npm install mars-globe cesium" />
+  <meta name="twitter:image" content="https://aaron43210.github.io/mars-globe/img/og.png" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareSourceCode",
+    "name": "mars-globe",
+    "description": "Drop-in 3D Mars globe for CesiumJS with the Mars IAU 2000 ellipsoid, NASA Mars Trek basemaps and no Cesium Ion token.",
+    "url": "https://aaron43210.github.io/mars-globe/",
+    "codeRepository": "https://github.com/aaron43210/MARSGIS/tree/main/packages/mars-globe",
+    "programmingLanguage": "TypeScript",
+    "runtimePlatform": "CesiumJS",
+    "license": "https://opensource.org/licenses/MIT",
+    "author": { "@type": "Person", "name": "Aaron R" },
+    "keywords": "mars, globe, cesium, cesiumjs, 3d, gis, nasa, mars trek, web component"
+  }
+  </script>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.146.0/Build/Cesium/Widgets/widgets.css" />
+  <style>
+    :root {
+      --bg: #0b0e14; --panel: #121722; --line: #232b3a; --text: #f1ece6; --muted: #a3acbb;
+      --mars: #e0703c; --mars-2: #f09a68; --code: #0f131c; --kw: #f09a68; --str: #b5d58c; --com: #7d8799;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    a { color: var(--mars-2); }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+    header.top { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--text); text-decoration: none; }
+    .brand img { width: 28px; height: 28px; }
+    nav a { color: var(--muted); text-decoration: none; margin-left: 18px; font-size: 15px; }
+    nav a:hover { color: var(--text); }
+
+    .hero { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; padding: 32px 0 56px; }
+    .eyebrow { letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-size: 13px; font-weight: 600; }
+    h1 { font-size: clamp(44px, 7vw, 76px); line-height: 1; margin: 10px 0 18px; letter-spacing: -.02em; }
+    h1 span { color: var(--mars); }
+    .lead { font-size: 20px; color: #dcd6cf; margin: 0 0 24px; max-width: 34ch; }
+    .install { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--code); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; font: 16px ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .install code { overflow-x: auto; white-space: nowrap; }
+    button.copy { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 6px; padding: 6px 10px; cursor: pointer; font: 13px system-ui, sans-serif; flex: none; }
+    button.copy:hover { color: var(--text); border-color: var(--muted); }
+    .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+    .pill { border: 1px solid var(--mars); color: var(--mars-2); border-radius: 999px; padding: 3px 12px; font-size: 14px; }
+    .links { margin-top: 22px; display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn { display: inline-block; padding: 10px 18px; border-radius: 8px; text-decoration: none; font-weight: 600; }
+    .btn.primary { background: var(--mars); color: #160a04; }
+    .btn.ghost { border: 1px solid var(--line); color: var(--text); }
+
+    .stage { position: relative; aspect-ratio: 1 / 1; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: #000; }
+    mars-globe { display: block; width: 100%; height: 100%; }
+    .stage .cesium-viewer-bottom { display: none; }
+    .switch { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; flex-wrap: wrap; gap: 6px; z-index: 2; }
+    .switch button { flex: 1 1 auto; background: rgba(11,14,20,.78); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; cursor: pointer; font: 13px system-ui, sans-serif; }
+    .switch button[aria-pressed="true"] { border-color: var(--mars); color: var(--mars-2); }
+    .hint { position: absolute; top: 12px; left: 12px; z-index: 2; font-size: 12px; color: var(--muted); background: rgba(11,14,20,.7); padding: 4px 8px; border-radius: 6px; }
+
+    section { padding: 56px 0; border-top: 1px solid var(--line); }
+    h2 { font-size: 32px; margin: 0 0 8px; }
+    .sub { color: var(--muted); margin: 0 0 28px; }
+    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; min-width: 0; }
+    .card h3 { margin: 0 0 4px; font-size: 18px; }
+    .card p { margin: 0 0 12px; color: var(--muted); font-size: 15px; }
+    pre { margin: 0; background: var(--code); border: 1px solid var(--line); border-radius: 8px; padding: 14px; overflow-x: auto; font: 13.5px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .k { color: var(--kw); } .s { color: var(--str); } .c { color: var(--com); }
+    .bm img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 8px; display: block; margin-bottom: 12px; background: #000; }
+    .bm code { color: var(--mars-2); font-size: 15px; }
+    .feat h3 { color: var(--mars-2); }
+    footer { border-top: 1px solid var(--line); padding: 32px 0 48px; color: var(--muted); font-size: 14px; }
+
+    @media (max-width: 860px) {
+      .hero { grid-template-columns: 1fr; gap: 28px; padding-top: 12px; }
+      .grid3 { grid-template-columns: 1fr; }
+      .grid4 { grid-template-columns: repeat(2, 1fr); }
+      nav a { margin-left: 12px; }
+    }
+    @media (max-width: 480px) { nav { display: none; } .lead { font-size: 18px; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <a class="brand" href="./"><img src="img/icon.png" alt="" />mars-globe</a>
+      <nav>
+        <a href="#usage">Usage</a>
+        <a href="#basemaps">Basemaps</a>
+        <a href="https://www.npmjs.com/package/mars-globe">npm</a>
+        <a href="https://github.com/aaron43210/MARSGIS/tree/main/packages/mars-globe">GitHub</a>
+      </nav>
+    </header>
+
+    <main>
+      <div class="hero">
+        <div>
+          <div class="eyebrow">Open source · npm · CesiumJS</div>
+          <h1>mars-<span>globe</span></h1>
+          <p class="lead">A drop-in 3D Mars globe for CesiumJS. NASA Mars Trek basemaps, the Mars ellipsoid and correct tiling, in one line. No Cesium Ion token.</p>
+          <div class="install">
+            <code id="cmd">npm install mars-globe cesium</code>
+            <button class="copy" type="button" data-copy="cmd">Copy</button>
+          </div>
+          <div class="pills">
+            <span class="pill">MIT</span><span class="pill">TypeScript</span><span class="pill">0 dependencies</span><span class="pill">5 kB standalone</span>
+          </div>
+          <div class="links">
+            <a class="btn primary" href="#usage">Get started</a>
+            <a class="btn ghost" href="https://www.npmjs.com/package/mars-globe">View on npm</a>
+          </div>
+        </div>
+
+        <div class="stage" aria-label="Live 3D Mars globe">
+          <span class="hint">Live demo · drag to rotate, scroll to zoom</span>
+          <mars-globe basemap="viking"></mars-globe>
+          <div class="switch" role="group" aria-label="Basemap">
+            <button type="button" data-bm="viking" aria-pressed="true">Viking</button>
+            <button type="button" data-bm="mola" aria-pressed="false">MOLA</button>
+            <button type="button" data-bm="mola-dem" aria-pressed="false">MOLA DEM</button>
+            <button type="button" data-bm="themis" aria-pressed="false">THEMIS</button>
+          </div>
+        </div>
+      </div>
+
+      <section id="why">
+        <h2>Why mars-globe</h2>
+        <p class="sub">Setting up CesiumJS for Mars is fiddly and poorly documented. This package does it for you.</p>
+        <div class="grid3">
+          <div class="card feat"><h3>Real Mars shape</h3><p>The IAU 2000 Mars ellipsoid, 3,396 km × 3,376 km, installed before the viewer is created.</p></div>
+          <div class="card feat"><h3>No Ion token</h3><p>Earth atmosphere, sky box and geocoder removed. No Cesium account or key needed.</p></div>
+          <div class="card feat"><h3>Correct tiling</h3><p>NASA Trek's geographic 2 × 1 tile grid, so every basemap lines up with no reprojection.</p></div>
+          <div class="card feat"><h3>Three entry points</h3><p>An ES module, a <code>&lt;mars-globe&gt;</code> Web Component and a plugin for an existing Viewer.</p></div>
+          <div class="card feat"><h3>Typed and SSR-safe</h3><p>TypeScript types included. Imports cleanly in Node, SSR frameworks and test runners.</p></div>
+          <div class="card feat"><h3>Tiny</h3><p>Zero runtime dependencies. Cesium is a peer dependency, so you keep your own version.</p></div>
+        </div>
+      </section>
+
+      <section id="usage">
+        <h2>Three ways to use it</h2>
+        <p class="sub">Pick the one that fits your project. Cesium needs its static assets: set <code>window.CESIUM_BASE_URL</code> and load <code>widgets.css</code>.</p>
+        <div class="grid3">
+          <div class="card">
+            <h3>1. npm module</h3><p>React, Vue, Svelte or plain JavaScript.</p>
+<pre><span class="k">import</span> { createMarsGlobe } <span class="k">from</span> <span class="s">'mars-globe'</span>;
+
+<span class="k">const</span> globe = createMarsGlobe(<span class="s">'map'</span>, {
+  defaultBasemap: <span class="s">'viking'</span>,
+});
+globe.setBasemap(<span class="s">'mola'</span>);</pre>
+          </div>
+          <div class="card">
+            <h3>2. Web Component</h3><p>Any HTML page. No build step.</p>
+<pre><span class="c">&lt;!-- after Cesium.js --&gt;</span>
+&lt;script src=<span class="s">"https://cdn.jsdelivr.net/
+  npm/mars-globe@1/dist/
+  mars-globe.min.js"</span>&gt;&lt;/script&gt;
+
+&lt;mars-globe basemap=<span class="s">"themis"</span>&gt;
+&lt;/mars-globe&gt;</pre>
+          </div>
+          <div class="card">
+            <h3>3. Cesium plugin</h3><p>Turn an existing Viewer into Mars.</p>
+<pre><span class="k">import</span> { Viewer } <span class="k">from</span> <span class="s">'cesium'</span>;
+<span class="k">import</span> { installMarsEllipsoid,
+  setupMarsGlobe } <span class="k">from</span> <span class="s">'mars-globe'</span>;
+
+installMarsEllipsoid();
+<span class="k">const</span> viewer = <span class="k">new</span> Viewer(<span class="s">'app'</span>);
+setupMarsGlobe(viewer, { basemap: <span class="s">'viking'</span> });</pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="basemaps">
+        <h2>Four NASA Mars Trek basemaps</h2>
+        <p class="sub">Streamed live from NASA Mars Trek. Choose one with <code>defaultBasemap</code> or switch at runtime with <code>setBasemap(id)</code>.</p>
+        <div class="grid4">
+          <div class="card bm"><img src="img/mg_viking.jpg" alt="Mars globe with the Viking MDIM 2.1 colour mosaic" loading="lazy" /><code>viking</code><p>Viking MDIM 2.1 colour mosaic · 232 m</p></div>
+          <div class="card bm"><img src="img/mg_mola.jpg" alt="Mars globe with MOLA colour shaded relief" loading="lazy" /><code>mola</code><p>MOLA colour shaded relief · 463 m</p></div>
+          <div class="card bm"><img src="img/mg_mola-dem.jpg" alt="Mars globe with MOLA grayscale elevation" loading="lazy" /><code>mola-dem</code><p>MOLA elevation, brighter is higher · 463 m</p></div>
+          <div class="card bm"><img src="img/mg_themis.jpg" alt="Mars globe with THEMIS daytime infrared" loading="lazy" /><code>themis</code><p>THEMIS daytime infrared · 100 m</p></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    <div class="wrap">
+      <p>mars-globe is MIT licensed and was extracted from <a href="https://github.com/aaron43210/MARSGIS">MarsGIS</a>, an open-source web GIS for Mars, by Aaron R.</p>
+      <p>Basemaps courtesy of NASA/JPL-Caltech, USGS (Viking MDIM 2.1), NASA/GSFC (MOLA), ASU (THEMIS) and NASA Mars Trek. Rendered with CesiumJS.</p>
+    </div>
+  </footer>
+
+  <script>window.CESIUM_BASE_URL = 'https://cdn.jsdelivr.net/npm/cesium@1.146.0/Build/Cesium/';</script>
+  <script src="https://cdn.jsdelivr.net/npm/cesium@1.146.0/Build/Cesium/Cesium.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mars-globe@1.0.1/dist/mars-globe.min.js"></script>
+  <script>
+    (function () {
+      var el = document.querySelector('mars-globe');
+      var buttons = document.querySelectorAll('.switch button');
+      buttons.forEach(function (b) {
+        b.addEventListener('click', function () {
+          el.setAttribute('basemap', b.dataset.bm);
+          buttons.forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); });
+        });
+      });
+      // Slow auto-spin until the visitor touches the globe.
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var spinning = !reduce;
+      function stop() { spinning = false; }
+      el.addEventListener('pointerdown', stop);
+      el.addEventListener('wheel', stop, { passive: true });
+      function hook() {
+        var g = el.marsGlobe;
+        if (!g) return requestAnimationFrame(hook);
+        g.viewer.clock.onTick.addEventListener(function () {
+          if (spinning) g.viewer.scene.camera.rotate(Cesium.Cartesian3.UNIT_Z, -0.0015);
+        });
+      }
+      hook();
+      document.querySelectorAll('button.copy').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var t = document.getElementById(b.dataset.copy).textContent;
+          (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(
+            function () { b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy'; }, 1500); },
+            function () { b.textContent = 'Select & copy'; });
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
