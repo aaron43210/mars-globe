@@ -181,6 +181,15 @@
     /* Big screens */
     @media (min-width: 1800px) { .stat b { font-size: 34px; } pre { font-size: 15px; } .install { font-size: 19px; } }
     .bar { padding-left: max(24px, env(safe-area-inset-left)); padding-right: max(24px, env(safe-area-inset-right)); }
+
+    /* Touch screens: finger-sized controls */
+    @media (pointer: coarse) {
+      button.copy, .tabs button, .bms button, .btn { min-height: 44px; }
+      button.copy { padding: 10px 14px; } .tabs button { padding: 10px 14px; }
+      .btn { display: inline-flex; align-items: center; }
+    }
+    /* Very narrow phones: let the install command wrap instead of hiding text */
+    @media (max-width: 400px) { .install code { white-space: normal; overflow-wrap: anywhere; } .install { align-items: flex-start; } }
     @media (prefers-reduced-motion: reduce) { .panel { transition: none; } html { scroll-behavior: auto; } }
   </style>
 </head>
@@ -350,7 +359,7 @@ setupMarsGlobe(viewer, { basemap: <span class="s">'viking'</span> });</pre>
       <div class="panel glassy">
         <div class="kicker">09 · Run the full app</div>
         <h2>The whole of MarsGIS in one container</h2>
-        <p>The release image on GitHub Container Registry holds the web app, the API, the SAM engine, a SQLite database and a sample cube. It runs on Intel and ARM.</p>
+        <p>The release image on GitHub Container Registry holds the web app, the API, the SAM engine and a sample cube, for a quick demo on Intel or ARM. In production, MarsGIS runs on PostgreSQL + PostGIS.</p>
 <pre class="solo"><span class="c"># start MarsGIS</span>
 docker run -d -p 8080:8080 \
   -v marsgis-data:/data \
@@ -507,7 +516,9 @@ curl localhost:8080/api/health</pre>
 
     function centres() { return steps.map(function (s) { return s.offsetTop + s.offsetHeight / 2 - window.innerHeight / 2; }); }
     var mids = centres();
-    var rz; window.addEventListener('resize', function () { clearTimeout(rz); rz = setTimeout(function () { mids = centres(); setFov(); }, 120); });
+    var rz; window.addEventListener('resize', function () { clearTimeout(rz); rz = setTimeout(function () { mids = centres(); setFov(); viewer.resize(); scene.requestRender(); }, 120); });
+    // Redraw whenever the globe box changes size (phone address bar, rotation); render-on-demand would otherwise leave a stale strip.
+    if (window.ResizeObserver) new ResizeObserver(function () { viewer.resize(); scene.requestRender(); }).observe(document.getElementById('globe'));
     (stackedQ.addEventListener ? stackedQ.addEventListener.bind(stackedQ, 'change') : stackedQ.addListener.bind(stackedQ))(function () { setFov(); mids = centres(); });
     function stopIndex() {
       var y = window.scrollY;
