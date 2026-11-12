@@ -57,7 +57,7 @@
     .bar nav a { color: var(--muted); text-decoration: none; margin-left: 20px; font-size: 15px; }
     .bar nav a:hover { color: var(--text); }
     .progress { position: fixed; top: 0; left: 0; right: 0; height: 2px; background: var(--mars); z-index: 6; transform: scaleX(0); transform-origin: left; will-change: transform; }
-    #loader { position: fixed; inset: 0; z-index: 1; background: transparent; pointer-events: none; display: grid; place-items: center; transition: opacity .8s ease; }
+    #loader { position: fixed; inset: 0; z-index: 0; background: transparent; pointer-events: none;  /* behind #globe: the first globe frame covers it */ display: grid; place-items: center; transition: opacity .8s ease; }
     #loader.done { opacity: 0; pointer-events: none; }
     @media (min-width: 761px) and (orientation: landscape), (min-width: 1101px) { #loader { left: 44vw; } }
     @media (max-width: 760px), (orientation: portrait) and (max-width: 1100px) { #loader { bottom: 38vh; } }
