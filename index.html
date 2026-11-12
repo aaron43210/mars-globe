@@ -9,6 +9,7 @@
   <link rel="icon" type="image/png" href="img/icon.png" />
   <link rel="apple-touch-icon" href="img/apple-touch-icon.png" />
   <meta name="theme-color" content="#07080c" />
+  <script>document.documentElement.classList.add('js');</script>
   <meta property="og:type" content="website" />
   <meta property="og:title" content="MarsGIS + mars-globe – 3D Mars for the web" />
   <meta property="og:description" content="Explore Mars in 3D, map minerals in the browser, and add a Mars globe to your app in one line: npm install mars-globe cesium" />
@@ -93,8 +94,9 @@
     /* Scroll story */
     main { position: relative; z-index: 2; }
     .step { min-height: 100vh; min-height: 100svh; display: flex; align-items: center; padding: 96px max(24px, env(safe-area-inset-right)) 96px max(24px, env(safe-area-inset-left)); }
-    .panel { width: min(clamp(460px, 36vw, 680px), 100%); margin-left: max(24px, 6vw); opacity: 0; transform: translateY(40px); transition: opacity .9s cubic-bezier(.2,.7,.2,1), transform .9s cubic-bezier(.2,.7,.2,1); }
-    .step.in .panel { opacity: 1; transform: none; }
+    .panel { width: min(clamp(460px, 36vw, 680px), 100%); margin-left: max(24px, 6vw); }
+    .js .panel { opacity: 0; transform: translateY(40px); transition: opacity .9s cubic-bezier(.2,.7,.2,1), transform .9s cubic-bezier(.2,.7,.2,1); }
+    .js .step.in .panel { opacity: 1; transform: none; }
     .kicker { letter-spacing: .16em; text-transform: uppercase; color: var(--mars-2); font-size: 13px; font-weight: 700; }
     h1 { font-size: clamp(40px, 6.2vw, 96px); line-height: .95; margin: 12px 0 18px; letter-spacing: -.03em; white-space: nowrap; }  /* "mars-globe" always on one line */
     h1 span { color: var(--mars); }
@@ -202,7 +204,7 @@
 
   <main>
     <!-- 0 -->
-    <section class="step" id="top" data-name="Full globe" data-lon="20" data-lat="12" data-h="12500" data-bm="viking" data-spin="1">
+    <section class="step in" id="top" data-name="Full globe" data-lon="20" data-lat="12" data-h="12500" data-bm="viking" data-spin="1">
       <div class="panel">
         <div class="kicker">npm package · open source</div>
         <h1>mars-<span>globe</span></h1>
@@ -385,7 +387,7 @@ curl localhost:8080/api/health</pre>
     var C = window.Cesium, MG = window.MarsGlobe;
     var loader = document.getElementById('loader');
     function hideLoader() { if (loader) { loader.classList.add('done'); var l = loader; loader = null; setTimeout(function () { l.remove(); }, 900); } }
-    if (!C || !MG) { loader.querySelector('span').textContent = 'Could not load the 3D globe. Check your connection and refresh.'; return; }
+    if (!C || !MG) { loader.querySelector('span').textContent = 'Could not load the 3D globe. Check your connection and refresh.'; document.querySelectorAll('.step').forEach(function (s) { s.classList.add('in'); }); return; }
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var stackedQ = window.matchMedia('(max-width: 760px), (orientation: portrait) and (max-width: 1100px)');
 
@@ -586,7 +588,7 @@ curl localhost:8080/api/health</pre>
 
     // ---- Dynamic text ----
     // Headings rise in word by word.
-    document.querySelectorAll('.panel h2, .panel h1').forEach(function (h) {
+    document.querySelectorAll('.panel h2').forEach(function (h) {
       var i = 0;
       (function walk(node) {
         Array.prototype.slice.call(node.childNodes).forEach(function (c) {
