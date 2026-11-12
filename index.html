@@ -46,7 +46,7 @@
     #globe { position: fixed; inset: 0; z-index: 0; }
     /* Desktop: push the globe right so the story text has room on the left. */
     @media (min-width: 761px) and (orientation: landscape), (min-width: 1101px) { #globe { left: 0; right: auto; width: 144vw; } }  /* centre of globe at 72vw, no gap on the left */
-    @media (max-width: 760px), (orientation: portrait) and (max-width: 1100px) { #globe { bottom: 38vh; bottom: 38svh; } }  /* phone: globe in the top part, text below */
+    @media (max-width: 760px), (orientation: portrait) and (max-width: 1100px) { #globe { top: -35vh; top: -35svh; } }  /* phone: canvas taller than the screen and shifted up, so the planet sits high but the surface still reaches the bottom edge */
     #globe .cesium-viewer-bottom { opacity: .55; transform: scale(.85); transform-origin: left bottom; }
     .vignette { position: fixed; inset: 0; z-index: 1; pointer-events: none;
       background: linear-gradient(90deg, rgba(7,8,12,.88) 0%, rgba(7,8,12,.55) 38%, rgba(7,8,12,0) 62%); }
@@ -420,7 +420,7 @@ curl localhost:8080/api/health</pre>
     viewer.resolutionScale = Math.min(window.devicePixelRatio || 1, 1.5);
     function setFov() {
       // Wide layout: canvas is 1.44x the viewport, so widen the view to keep the globe's size.
-      camera.frustum.fov = stackedQ.matches ? C.Math.toRadians(42) : 2 * Math.atan(Math.tan(C.Math.toRadians(30)) * 1.44);
+      camera.frustum.fov = stackedQ.matches ? 2 * Math.atan(Math.tan(C.Math.toRadians(21)) * 135 / 62) : 2 * Math.atan(Math.tan(C.Math.toRadians(30)) * 1.44);
     }
     setFov();
 
