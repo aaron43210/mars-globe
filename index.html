@@ -37,7 +37,7 @@
     }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
-    body { margin: 0; background: var(--bg); color: var(--text); font: clamp(16px, .45vw + 11px, 19px)/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow-x: hidden; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: clamp(16px, .45vw + 11px, 19px)/1.65 system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", "DejaVu Sans", "Liberation Sans", Arial, sans-serif; overflow-x: hidden; }
     a { color: var(--mars-2); }
     code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .92em; }
 
@@ -128,16 +128,16 @@
 
     /* Code */
     .tabs { display: flex; gap: 6px; margin: 16px 0 0; flex-wrap: wrap; }
-    .tabs button { background: transparent; color: var(--muted); border: 1px solid var(--line); border-bottom: none; border-radius: 8px 8px 0 0; padding: 8px 12px; cursor: pointer; font: 14px system-ui, sans-serif; }
+    .tabs button { background: transparent; color: var(--muted); border: 1px solid var(--line); border-bottom: none; border-radius: 8px 8px 0 0; padding: 8px 12px; cursor: pointer; font: 14px system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", "DejaVu Sans", "Liberation Sans", Arial, sans-serif; }
     .tabs button[aria-selected="true"] { color: var(--text); background: var(--code); border-color: rgba(227,111,58,.6); }
     pre { margin: 0; background: var(--code); border: 1px solid var(--line); border-radius: 0 10px 10px 10px; padding: 16px; overflow-x: auto; font: 14px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; }
     pre.solo { border-radius: 10px; }
     .k { color: var(--kw); } .s { color: var(--str); } .c { color: var(--com); }
     .install { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: var(--code); border: 1px solid rgba(227,111,58,.6); border-radius: 10px; padding: 14px 16px; font: 17px ui-monospace, SFMono-Regular, Menlo, monospace; margin: 18px 0 8px; }
     .install code { white-space: nowrap; overflow-x: auto; }
-    button.copy { background: var(--mars); color: #170a03; border: 0; border-radius: 7px; padding: 7px 12px; font: 600 13px system-ui, sans-serif; cursor: pointer; flex: none; }
+    button.copy { background: var(--mars); color: #170a03; border: 0; border-radius: 7px; padding: 7px 12px; font: 600 13px system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", "DejaVu Sans", "Liberation Sans", Arial, sans-serif; cursor: pointer; flex: none; }
     .bms { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 14px; }
-    .bms button { display: grid; grid-template-columns: 56px 1fr; gap: 12px; align-items: center; text-align: left; background: var(--glass); border: 1px solid var(--line); border-radius: 12px; padding: 8px; color: var(--text); cursor: pointer; font: 14px system-ui, sans-serif; }
+    .bms button { display: grid; grid-template-columns: 56px 1fr; gap: 12px; align-items: center; text-align: left; background: var(--glass); border: 1px solid var(--line); border-radius: 12px; padding: 8px; color: var(--text); cursor: pointer; font: 14px system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", "DejaVu Sans", "Liberation Sans", Arial, sans-serif; }
     .bms button img { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; }
     .bms button small { display: block; color: var(--muted); font-size: 12px; }
     .bms button[aria-pressed="true"] { border-color: var(--mars); box-shadow: 0 0 0 1px var(--mars) inset; }
@@ -182,6 +182,7 @@
     }
     /* Big screens */
     @media (min-width: 1800px) { .stat b { font-size: 34px; } pre { font-size: 15px; } .install { font-size: 19px; } }
+    @media (max-width: 760px), (orientation: portrait) and (max-width: 1100px) { .bar { position: absolute; background: none; } }  /* phone: header scrolls away, never covers the content */
     .bar { padding-left: max(24px, env(safe-area-inset-left)); padding-right: max(24px, env(safe-area-inset-right)); }
 
     /* Touch screens: finger-sized controls */
@@ -192,12 +193,23 @@
     }
     /* Very narrow phones: let the install command wrap instead of hiding text */
     @media (max-width: 400px) { .install code { white-space: normal; overflow-wrap: anywhere; } .install { align-items: flex-start; } }
+
+    /* Fallback when the browser cannot do 3D (no WebGL) */
+    #still { position: fixed; inset: 0; z-index: 0; display: grid; place-items: center; pointer-events: none; }
+    #still[hidden] { display: none; }
+    #still img { width: min(46vh, 40vw); border-radius: 50%; animation: drift 12s ease-in-out infinite alternate; }
+    #still span { position: fixed; right: 24px; bottom: 24px; max-width: 320px; font-size: 13px; color: var(--muted); background: var(--glass); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+    @keyframes drift { to { transform: translateY(-12px) rotate(3deg); } }
+    @media (min-width: 761px) and (orientation: landscape), (min-width: 1101px) { #still { left: 44vw; } }
+    @media (max-width: 760px), (orientation: portrait) and (max-width: 1100px) { #still { place-items: start center; padding-top: 12vh; } #still img { width: 62vw; } #still span { left: 16px; right: 16px; bottom: auto; top: 58px; max-width: none; } }
+    .cesium-widget-errorPanel { display: none !important; }  /* never show Cesium's raw error box */
     @media (prefers-reduced-motion: reduce) { .panel { transition: none; } html { scroll-behavior: auto; } }
   </style>
 </head>
 <body>
   <div id="loader" role="status"><div><i></i><span>Loading Mars…</span></div></div>
   <div id="globe" aria-hidden="true"></div>
+  <div id="still" hidden><img src="img/mg_viking.jpg" alt="Mars" /><span>Your browser has 3D graphics (WebGL) turned off, so this is a still picture of Mars.</span></div>
   <div class="vignette"></div>
   <div class="progress" id="progress"></div>
 
@@ -403,11 +415,25 @@ curl localhost:8080/api/health</pre>
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var stackedQ = window.matchMedia('(max-width: 760px), (orientation: portrait) and (max-width: 1100px)');
 
+
+    function noGlobe() {
+      if (loader) { loader.remove(); loader = null; }
+      document.getElementById('still').hidden = false;
+      var g = document.getElementById('globe'); g.innerHTML = '';
+      document.querySelectorAll('.step').forEach(function (s) { s.classList.add('in'); });
+    }
+    function webglOK() {
+      try { var c = document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl') || c.getContext('experimental-webgl'))); }
+      catch (e) { return false; }
+    }
+    if (!webglOK()) { noGlobe(); return; }
     // NASA Trek is one server: allow more parallel tile requests to it.
     C.RequestScheduler.requestsByServer['trek.nasa.gov:443'] = 32;
 
     // ---- The globe: one mars-globe instance ----
-    var globe = MG.createMarsGlobe('globe', { defaultBasemap: 'viking' });
+    var globe;
+    try { globe = MG.createMarsGlobe('globe', { defaultBasemap: 'viking' }); }
+    catch (e) { noGlobe(); return; }   // WebGL present but too limited for Cesium
     var viewer = globe.viewer, scene = viewer.scene, camera = scene.camera;
     scene.screenSpaceCameraController.enableInputs = false;   // scrolling drives the camera
     scene.backgroundColor = C.Color.fromCssColorString('#07080c');
@@ -494,7 +520,7 @@ curl localhost:8080/api/health</pre>
 
     // ---- Map features ----
     var orange = C.Color.fromCssColorString('#f4a06e');
-    var labelStyle = { font: '600 14px system-ui, sans-serif', fillColor: C.Color.WHITE, showBackground: true,
+    var labelStyle = { font: '600 14px system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", "DejaVu Sans", "Liberation Sans", Arial, sans-serif', fillColor: C.Color.WHITE, showBackground: true,
       backgroundColor: C.Color.fromCssColorString('#07080c').withAlpha(0.72), disableDepthTestDistance: Number.POSITIVE_INFINITY };
     var fp = viewer.entities.add({ show: false, rectangle: {
       coordinates: C.Rectangle.fromDegrees(76.9404, 22.1347, 77.2127, 22.3863),   // CRISM frt00003e12 footprint
