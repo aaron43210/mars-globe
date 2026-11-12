@@ -1,3 +1,3 @@
 User-agent: *
 Allow: /
-Sitemap: https://mars-globe.aaronr.tech/sitemap.xml
+Sitemap: https://aaron43210.github.io/mars-globe/sitemap.xml
