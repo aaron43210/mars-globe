@@ -1,0 +1,187 @@
+  <script>window.CESIUM_BASE_URL = 'https://cdn.jsdelivr.net/npm/cesium@1.146.0/Build/Cesium/';</script>
+  <script src="https://cdn.jsdelivr.net/npm/cesium@1.146.0/Build/Cesium/Cesium.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mars-globe@1.0.1/dist/mars-globe.min.js"></script>
+  <script>
+  (function () {
+    var C = window.Cesium, MG = window.MarsGlobe;
+    var loader = document.getElementById('loader');
+    function hideLoader() { if (loader) { loader.classList.add('done'); setTimeout(function () { loader.remove(); loader = null; }, 900); } }
+    if (!C || !MG) { loader.querySelector('span').textContent = 'Could not load the 3D globe. Check your connection and refresh.'; return; }
+
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // The whole background is one mars-globe instance.
+    var globe = MG.createMarsGlobe('globe', { defaultBasemap: 'viking' });
+    var viewer = globe.viewer, scene = viewer.scene, camera = scene.camera;
+    scene.screenSpaceCameraController.enableInputs = false; // scrolling drives the camera
+    scene.backgroundColor = C.Color.fromCssColorString('#07080c');
+    scene.fog.enabled = false;
+    scene.globe.preloadSiblings = true;   // fewer holes while the camera moves
+    scene.globe.tileCacheSize = 400;
+    scene.globe.maximumScreenSpaceError = 2.5;
+    viewer.resolutionScale = Math.min(window.devicePixelRatio || 1, 1.5);
+
+    // ---- Basemaps with a cross-fade (no flash while new tiles load) ----
+    var layers = viewer.imageryLayers;
+    var base = layers.get(0), baseId = 'viking', fading = null;
+    function setBasemap(id) {
+      if (!id || id === baseId) return;
+      baseId = id;
+      var next = layers.addImageryProvider(MG.basemapProvider(id));
+      next.alpha = 0;
+      var old = base; base = next;
+      var t0 = performance.now(), dur = reduce ? 0 : 700;
+      if (fading) fading();
+      var stop = false; fading = function () { stop = true; next.alpha = 1; if (old && layers.contains(old)) layers.remove(old, true); };
+      (function step(now) {
+        if (stop) return;
+        var k = dur ? Math.min(1, (now - t0) / dur) : 1;
+        next.alpha = k * k * (3 - 2 * k);
+        if (k < 1) requestAnimationFrame(step); else { fading = null; if (old && layers.contains(old)) layers.remove(old, true); }
+      })(t0);
+      document.querySelectorAll('#bms button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.bm === id)); });
+    }
+    // Warm the cache: let the other three basemaps start fetching their top tiles early.
+    ['mola', 'mola-dem', 'themis'].forEach(function (id) {
+      var l = layers.addImageryProvider(MG.basemapProvider(id)); l.alpha = 0.001; l.show = true;
+      setTimeout(function () { if (layers.contains(l)) layers.remove(l, true); }, 6000);
+    });
+
+    // ---- Map features ----
+    var orange = C.Color.fromCssColorString('#f4a06e');
+    var labelStyle = { font: '600 14px system-ui, sans-serif', fillColor: C.Color.WHITE, showBackground: true,
+      backgroundColor: C.Color.fromCssColorString('#07080c').withAlpha(0.72), disableDepthTestDistance: Number.POSITIVE_INFINITY };
+    var fp = viewer.entities.add({ show: false, rectangle: {
+      coordinates: C.Rectangle.fromDegrees(76.9404, 22.1347, 77.2127, 22.3863),   // CRISM frt00003e12 footprint
+      material: C.Color.fromCssColorString('#e36f3a').withAlpha(0.22), outline: true, outlineColor: orange, height: 0 } });
+    var fpLabel = viewer.entities.add({ show: false, position: C.Cartesian3.fromDegrees(77.08, 22.45),
+      label: Object.assign({ text: 'CRISM frt00003e12', pixelOffset: new C.Cartesian2(0, -14) }, labelStyle) });
+    var pins = [['Jezero', 77.4, 18.4], ['Gale', 137.4, -5.4], ['Olympus Mons', -133.8, 18.65], ['Nili Fossae', 77.0, 21.0]].map(function (s) {
+      return viewer.entities.add({ show: false, position: C.Cartesian3.fromDegrees(s[1], s[2]),
+        point: { pixelSize: 9, color: orange, outlineColor: C.Color.WHITE, outlineWidth: 2, disableDepthTestDistance: Number.POSITIVE_INFINITY },
+        label: Object.assign({ text: s[0], pixelOffset: new C.Cartesian2(0, -18) }, labelStyle) });
+    });
+
+    // ---- Camera stops from the sections ----
+    var steps = Array.prototype.slice.call(document.querySelectorAll('.step'));
+    var stops = steps.map(function (s) {
+      var d = s.dataset;
+      return { lon: +d.lon, lat: +d.lat, h: +d.h * 1000, pitch: d.pitch ? +d.pitch : -90, spin: !!d.spin,
+               bm: d.bm || null, name: d.name, footprint: !!d.footprint, pins: !!d.pins };
+    });
+    // Sections without a basemap keep the previous one.
+    stops.forEach(function (s, i) { if (!s.bm) s.bm = i ? stops[i - 1].bm : 'viking'; });
+
+    function centres() { return steps.map(function (s) { return s.offsetTop + s.offsetHeight / 2 - window.innerHeight / 2; }); }
+    var mids = centres();
+    window.addEventListener('resize', function () { mids = centres(); });
+
+    // Scroll position -> fractional stop index (e.g. 2.4 = 40% of the way from stop 2 to stop 3).
+    function stopIndex() {
+      var y = window.scrollY;
+      if (y <= mids[0]) return 0;
+      for (var i = 0; i < mids.length - 1; i++) {
+        if (y < mids[i + 1]) return i + (y - mids[i]) / (mids[i + 1] - mids[i]);
+      }
+      return mids.length - 1;
+    }
+    function ease(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+    function lerp(a, b, t) { return a + (b - a) * t; }
+    function lerpLon(a, b, t) { var d = ((b - a + 540) % 360) - 180; return a + d * t; }
+
+    function target(f) {
+      var i = Math.min(Math.floor(f), stops.length - 1), j = Math.min(i + 1, stops.length - 1);
+      var t = ease(f - i), a = stops[i], b = stops[j];
+      // Zoom through a higher point when both ends are close-ups, so long hops pull back first.
+      var lift = Math.sin(Math.PI * t) * Math.min(Math.abs(a.lon - b.lon) + Math.abs(a.lat - b.lat), 120) * 60000;
+      return {
+        lon: lerpLon(a.lon, b.lon, t), lat: lerp(a.lat, b.lat, t),
+        h: Math.exp(lerp(Math.log(a.h), Math.log(b.h), t)) + lift,
+        pitch: lerp(a.pitch, b.pitch, t),
+        spinW: (a.spin ? 1 - t : 0) + (b.spin ? t : 0)
+      };
+    }
+
+    // Damped camera: chases the scroll target every frame, so motion is always smooth.
+    var cur = null, spinLon = 0, lastIdx = -1;
+    var where = document.getElementById('where'), dots = document.getElementById('dots');
+    steps.forEach(function (s) { var a = document.createElement('a'); a.href = '#' + s.id; a.setAttribute('aria-label', s.dataset.name); dots.appendChild(a); });
+    var dotEls = dots.querySelectorAll('a');
+
+    function place(p) {
+      var lon = p.lon + spinLon * p.spinW, pitch = C.Math.toRadians(p.pitch);
+      var dest;
+      if (p.pitch > -89) {
+        var back = (p.h / 1000) / 59 * Math.cos(-pitch);   // ~59 km per degree on Mars
+        dest = C.Cartesian3.fromDegrees(lon, p.lat - back, p.h * Math.sin(-pitch));
+      } else {
+        dest = C.Cartesian3.fromDegrees(lon, p.lat, p.h);
+      }
+      camera.setView({ destination: dest, orientation: { heading: 0, pitch: pitch, roll: 0 } });
+    }
+
+    var lastT = performance.now();
+    function frame(now) {
+      var dt = Math.min(64, now - lastT); lastT = now;
+      var f = stopIndex(), tgt = target(f);
+      if (!cur) cur = { lon: tgt.lon, lat: tgt.lat, h: 40000000, pitch: tgt.pitch, spinW: tgt.spinW };
+      var k = reduce ? 1 : 1 - Math.exp(-dt / 260);           // ~0.26 s smoothing
+      cur.lon = lerpLon(cur.lon, tgt.lon, k); cur.lat = lerp(cur.lat, tgt.lat, k);
+      cur.h = Math.exp(lerp(Math.log(cur.h), Math.log(tgt.h), k));
+      cur.pitch = lerp(cur.pitch, tgt.pitch, k); cur.spinW = lerp(cur.spinW, tgt.spinW, k);
+      if (!reduce) spinLon -= dt * 0.0016 * cur.spinW;          // gentle spin on the intro/outro
+      place(cur);
+
+      var idx = Math.round(f);
+      if (idx !== lastIdx) {
+        lastIdx = idx;
+        var s = stops[idx];
+        setBasemap(s.bm);
+        fp.show = fpLabel.show = s.footprint;
+        pins.forEach(function (p) { p.show = s.pins; });
+        where.innerHTML = 'Mars · <b>' + s.name + '</b>';
+        dotEls.forEach(function (el, k2) { el.classList.toggle('on', k2 === idx); });
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+
+    // Hide the loader once the first view's tiles are in (or after 10 s at most).
+    var ready = false;
+    scene.globe.tileLoadProgressEvent.addEventListener(function (n) {
+      if (!ready && n === 0 && scene.globe.tilesLoaded) { ready = true; setTimeout(hideLoader, 250); }
+    });
+    setTimeout(hideLoader, 10000);
+
+    // ---- Page UI ----
+    var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) e.target.classList.add('in'); }); }, { threshold: 0.25 });
+    steps.forEach(function (s) { io.observe(s); });
+    var bar = document.getElementById('progress');
+    window.addEventListener('scroll', function () {
+      var max = document.documentElement.scrollHeight - window.innerHeight;
+      bar.style.transform = 'scaleX(' + (max > 0 ? window.scrollY / max : 0) + ')';
+    }, { passive: true });
+
+    document.querySelectorAll('#bms button').forEach(function (b) {
+      b.addEventListener('click', function () { setBasemap(b.dataset.bm); stops[lastIdx].bm = b.dataset.bm; });
+    });
+    document.querySelectorAll('.tabs button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.querySelectorAll('.tabs button').forEach(function (o) {
+          var on = o === b; o.setAttribute('aria-selected', String(on)); document.getElementById(o.dataset.tab).hidden = !on;
+        });
+      });
+    });
+    document.querySelectorAll('button.copy').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var t = document.getElementById(b.dataset.copy).textContent;
+        (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(
+          function () { b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy'; }, 1500); },
+          function () { b.textContent = 'Select & copy'; });
+      });
+    });
+    steps[0].classList.add('in');
+  })();
+  </script>
+</body>
+</html>

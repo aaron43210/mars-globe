@@ -2,254 +2,678 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>mars-globe – 3D Mars Globe for CesiumJS</title>
-  <meta name="description" content="mars-globe is a drop-in 3D Mars globe for CesiumJS: Mars IAU 2000 ellipsoid, four NASA Mars Trek basemaps and no Cesium Ion token. Use it as an npm module, a &lt;mars-globe&gt; Web Component or a Cesium plugin." />
-  <meta name="keywords" content="mars globe, 3d mars globe, cesium mars, cesiumjs mars, mars map javascript, mars web component, nasa mars trek, mola, viking, themis, npm" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>mars-globe – 3D Mars Globe for CesiumJS · MarsGIS</title>
+  <meta name="description" content="MarsGIS is an open-source web GIS for Mars. Find NASA CRISM scenes on a 3D globe, map candidate minerals with the Spectral Angle Mapper, and add a 3D Mars globe to any web app with the mars-globe npm package." />
   <link rel="canonical" href="https://aaron43210.github.io/mars-globe/" />
   <link rel="icon" type="image/png" href="img/icon.png" />
   <link rel="apple-touch-icon" href="img/apple-touch-icon.png" />
-  <meta name="theme-color" content="#0b0e14" />
-
+  <meta name="theme-color" content="#07080c" />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="mars-globe – 3D Mars Globe for CesiumJS" />
-  <meta property="og:description" content="A drop-in 3D Mars globe for CesiumJS. NASA Mars Trek basemaps, Mars ellipsoid, no Ion token. npm install mars-globe cesium" />
+  <meta property="og:title" content="MarsGIS + mars-globe – 3D Mars for the web" />
+  <meta property="og:description" content="Explore Mars in 3D, map minerals in the browser, and add a Mars globe to your app in one line: npm install mars-globe cesium" />
   <meta property="og:url" content="https://aaron43210.github.io/mars-globe/" />
   <meta property="og:image" content="https://aaron43210.github.io/mars-globe/img/og.png" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="mars-globe – 3D Mars Globe for CesiumJS" />
-  <meta name="twitter:description" content="A drop-in 3D Mars globe for CesiumJS. npm install mars-globe cesium" />
-  <meta name="twitter:image" content="https://aaron43210.github.io/mars-globe/img/og.png" />
-
   <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "SoftwareSourceCode",
-    "name": "mars-globe",
-    "description": "Drop-in 3D Mars globe for CesiumJS with the Mars IAU 2000 ellipsoid, NASA Mars Trek basemaps and no Cesium Ion token.",
-    "url": "https://aaron43210.github.io/mars-globe/",
-    "codeRepository": "https://github.com/aaron43210/MARSGIS/tree/main/packages/mars-globe",
-    "programmingLanguage": "TypeScript",
-    "runtimePlatform": "CesiumJS",
-    "license": "https://opensource.org/licenses/MIT",
-    "author": { "@type": "Person", "name": "Aaron R" },
-    "keywords": "mars, globe, cesium, cesiumjs, 3d, gis, nasa, mars trek, web component"
-  }
+  {"@context":"https://schema.org","@type":"SoftwareSourceCode","name":"mars-globe",
+   "description":"Drop-in 3D Mars globe for CesiumJS with the Mars IAU 2000 ellipsoid, NASA Mars Trek basemaps and no Cesium Ion token. Part of MarsGIS.",
+   "url":"https://aaron43210.github.io/mars-globe/","codeRepository":"https://github.com/aaron43210/MARSGIS",
+   "programmingLanguage":"TypeScript","runtimePlatform":"CesiumJS","license":"https://opensource.org/licenses/MIT",
+   "author":{"@type":"Person","name":"Aaron R"}}
   </script>
-
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="preconnect" href="https://trek.nasa.gov" crossorigin />
+  <link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/cesium@1.146.0/Build/Cesium/Cesium.js" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.146.0/Build/Cesium/Widgets/widgets.css" />
   <style>
     :root {
-      --bg: #0b0e14; --panel: #121722; --line: #232b3a; --text: #f1ece6; --muted: #a3acbb;
-      --mars: #e0703c; --mars-2: #f09a68; --code: #0f131c; --kw: #f09a68; --str: #b5d58c; --com: #7d8799;
+      --bg: #07080c; --glass: rgba(10, 12, 18, .72); --line: rgba(255,255,255,.12);
+      --text: #f3eee8; --muted: #a9b0bd; --mars: #e36f3a; --mars-2: #f4a06e; --ok: #8fd18a;
+      --code: rgba(6, 8, 12, .85); --kw: #f4a06e; --str: #b9da8e; --com: #7f8899;
     }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
-    body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: clamp(16px, .45vw + 11px, 19px)/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow-x: hidden; }
     a { color: var(--mars-2); }
-    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
-    header.top { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; gap: 12px; }
-    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--text); text-decoration: none; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .92em; }
+
+    /* The globe: fixed behind everything */
+    html { overflow-x: hidden; }
+    #globe { position: fixed; inset: 0; z-index: 0; }
+    /* Desktop: push the globe right so the story text has room on the left. */
+    @media (min-width: 761px) and (orientation: landscape), (min-width: 1101px) { #globe { left: 0; right: auto; width: 144vw; } }  /* centre of globe at 72vw, no gap on the left */
+    @media (max-width: 760px), (orientation: portrait) and (max-width: 1100px) { #globe { bottom: 38vh; bottom: 38svh; } }  /* phone: globe in the top part, text below */
+    #globe .cesium-viewer-bottom { opacity: .55; transform: scale(.85); transform-origin: left bottom; }
+    .vignette { position: fixed; inset: 0; z-index: 1; pointer-events: none;
+      background: linear-gradient(90deg, rgba(7,8,12,.88) 0%, rgba(7,8,12,.55) 38%, rgba(7,8,12,0) 62%); }
+
+    /* Top bar */
+    .bar { position: fixed; top: 0; left: 0; right: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; }
+    .brand { display: flex; gap: 10px; align-items: center; font-weight: 700; color: var(--text); text-decoration: none; letter-spacing: .01em; }
     .brand img { width: 28px; height: 28px; }
-    nav a { color: var(--muted); text-decoration: none; margin-left: 18px; font-size: 15px; }
-    nav a:hover { color: var(--text); }
+    .bar nav a { color: var(--muted); text-decoration: none; margin-left: 20px; font-size: 15px; }
+    .bar nav a:hover { color: var(--text); }
+    .progress { position: fixed; top: 0; left: 0; right: 0; height: 2px; background: var(--mars); z-index: 6; transform: scaleX(0); transform-origin: left; will-change: transform; }
+    #loader { position: fixed; inset: 0; z-index: 20; background: var(--bg); display: grid; place-items: center; transition: opacity .8s ease; }
+    #loader.done { opacity: 0; pointer-events: none; }
+    #loader div { display: grid; justify-items: center; gap: 18px; color: var(--muted); font-size: 14px; letter-spacing: .08em; text-transform: uppercase; text-align: center; padding: 16px; }
+    #loader i { width: 64px; height: 64px; border-radius: 50%; background: radial-gradient(circle at 35% 32%, #f0a06a, #c15f33 55%, #6e2d14); box-shadow: 0 0 40px rgba(227,111,58,.35); animation: pulse 1.6s ease-in-out infinite; }
+    @keyframes pulse { 50% { transform: scale(.88); opacity: .75; } }
+    #globe canvas { will-change: transform; }
+    .hero-code { font-size: 13.5px; margin: 0 0 6px; }
+    /* Dynamic text */
+    .w { display: inline-block; opacity: 0; transform: translateY(.45em) rotate(2deg); filter: blur(6px);
+         transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1), filter .7s; transition-delay: calc(var(--i) * 55ms + 120ms); }
+    .in .w { opacity: 1; transform: none; filter: none; }
+    .stag { opacity: 0; transform: translateY(14px); transition: opacity .6s ease, transform .6s ease; transition-delay: calc(var(--i) * 90ms + 380ms); }
+    .in .stag { opacity: 1; transform: none; }
+    .rot { color: var(--mars-2); font-weight: 600; border-bottom: 2px solid rgba(227,111,58,.5); white-space: nowrap; }
+    .rot::after { content: "▍"; color: var(--mars); animation: blink 1s steps(1) infinite; margin-left: 1px; font-weight: 400; }
+    @keyframes blink { 50% { opacity: 0; } }
+    .where { display: grid; gap: 1px; border-radius: 12px; min-width: 210px; }
+    .hud { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--mars-2); letter-spacing: .02em; }
+    h1 .glow { text-shadow: 0 0 40px rgba(227,111,58,.45); }
 
-    .hero { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; padding: 32px 0 56px; }
-    .eyebrow { letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-size: 13px; font-weight: 600; }
-    h1 { font-size: clamp(44px, 7vw, 76px); line-height: 1; margin: 10px 0 18px; letter-spacing: -.02em; }
+
+    /* Location chip shows where the camera is */
+    .where { position: fixed; right: 24px; bottom: 28px; z-index: 4; background: var(--glass); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; font-size: 13px; color: var(--muted); backdrop-filter: blur(8px); }
+    .where b { color: var(--text); font-weight: 600; }
+
+    /* Chapter dots */
+    .dots { position: fixed; right: 22px; top: 50%; transform: translateY(-50%); z-index: 4; display: flex; flex-direction: column; gap: 10px; }
+    .dots a { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.25); display: block; }
+    .dots a.on { background: var(--mars); box-shadow: 0 0 0 4px rgba(227,111,58,.25); }
+
+    /* Scroll story */
+    main { position: relative; z-index: 2; }
+    .step { min-height: 100vh; min-height: 100svh; display: flex; align-items: center; padding: 96px max(24px, env(safe-area-inset-right)) 96px max(24px, env(safe-area-inset-left)); }
+    .panel { width: min(clamp(460px, 36vw, 680px), 100%); margin-left: max(24px, 6vw); opacity: 0; transform: translateY(40px); transition: opacity .9s cubic-bezier(.2,.7,.2,1), transform .9s cubic-bezier(.2,.7,.2,1); }
+    .step.in .panel { opacity: 1; transform: none; }
+    .kicker { letter-spacing: .16em; text-transform: uppercase; color: var(--mars-2); font-size: 13px; font-weight: 700; }
+    h1 { font-size: clamp(52px, 8vw, 104px); line-height: .95; margin: 12px 0 18px; letter-spacing: -.03em; }
     h1 span { color: var(--mars); }
-    .lead { font-size: 20px; color: #dcd6cf; margin: 0 0 24px; max-width: 34ch; }
-    .install { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--code); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; font: 16px ui-monospace, SFMono-Regular, Menlo, monospace; }
-    .install code { overflow-x: auto; white-space: nowrap; }
-    button.copy { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 6px; padding: 6px 10px; cursor: pointer; font: 13px system-ui, sans-serif; flex: none; }
-    button.copy:hover { color: var(--text); border-color: var(--muted); }
-    .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
-    .pill { border: 1px solid var(--mars); color: var(--mars-2); border-radius: 999px; padding: 3px 12px; font-size: 14px; }
-    .links { margin-top: 22px; display: flex; gap: 12px; flex-wrap: wrap; }
-    .btn { display: inline-block; padding: 10px 18px; border-radius: 8px; text-decoration: none; font-weight: 600; }
-    .btn.primary { background: var(--mars); color: #160a04; }
-    .btn.ghost { border: 1px solid var(--line); color: var(--text); }
+    h2 { font-size: clamp(32px, 4.2vw, 50px); line-height: 1.05; margin: 10px 0 16px; letter-spacing: -.02em; }
+    p.lead { font-size: 20px; color: #ddd6cf; margin: 0 0 18px; }
+    p { color: #cfd4dc; margin: 0 0 14px; }
+    .glass { background: var(--glass); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; backdrop-filter: blur(10px); }
+    .scrollhint { margin-top: 34px; color: var(--muted); font-size: 14px; display: flex; gap: 10px; align-items: center; }
+    .scrollhint i { width: 18px; height: 28px; border: 2px solid var(--muted); border-radius: 10px; position: relative; }
+    .scrollhint i::after { content: ""; position: absolute; left: 50%; top: 5px; width: 3px; height: 6px; margin-left: -1.5px; background: var(--mars); border-radius: 2px; animation: wheel 1.6s infinite; }
+    @keyframes wheel { 0% { opacity: 0; transform: translateY(0); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateY(9px); } }
 
-    .stage { position: relative; aspect-ratio: 1 / 1; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: #000; }
-    mars-globe { display: block; width: 100%; height: 100%; }
-    .stage .cesium-viewer-bottom { display: none; }
-    .switch { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; flex-wrap: wrap; gap: 6px; z-index: 2; }
-    .switch button { flex: 1 1 auto; background: rgba(11,14,20,.78); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; cursor: pointer; font: 13px system-ui, sans-serif; }
-    .switch button[aria-pressed="true"] { border-color: var(--mars); color: var(--mars-2); }
-    .hint { position: absolute; top: 12px; left: 12px; z-index: 2; font-size: 12px; color: var(--muted); background: rgba(11,14,20,.7); padding: 4px 8px; border-radius: 6px; }
+    .list { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 10px; }
+    .list li { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start; }
+    .list .n { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--mars); color: var(--mars-2); display: grid; place-items: center; font-weight: 700; font-size: 14px; }
+    .list b { color: var(--text); }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 16px 0; }
+    .stat { background: var(--glass); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+    .stat b { display: block; font-size: 28px; line-height: 1.1; color: var(--mars-2); }
+    .stat span { font-size: 13px; color: var(--muted); }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .tag { border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; font-size: 14px; color: var(--text); background: rgba(255,255,255,.04); }
+    .shot { width: 100%; border-radius: 12px; border: 1px solid var(--line); display: block; margin: 14px 0 6px; }
+    .cap { font-size: 13px; color: var(--muted); }
+    .warn { border-left: 3px solid var(--mars); padding-left: 12px; color: #e9d7c9; font-size: 15px; }
 
-    section { padding: 56px 0; border-top: 1px solid var(--line); }
-    h2 { font-size: 32px; margin: 0 0 8px; }
-    .sub { color: var(--muted); margin: 0 0 28px; }
-    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-    .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
-    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; min-width: 0; }
-    .card h3 { margin: 0 0 4px; font-size: 18px; }
-    .card p { margin: 0 0 12px; color: var(--muted); font-size: 15px; }
-    pre { margin: 0; background: var(--code); border: 1px solid var(--line); border-radius: 8px; padding: 14px; overflow-x: auto; font: 13.5px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    /* Code */
+    .tabs { display: flex; gap: 6px; margin: 16px 0 0; flex-wrap: wrap; }
+    .tabs button { background: transparent; color: var(--muted); border: 1px solid var(--line); border-bottom: none; border-radius: 8px 8px 0 0; padding: 8px 12px; cursor: pointer; font: 14px system-ui, sans-serif; }
+    .tabs button[aria-selected="true"] { color: var(--text); background: var(--code); border-color: rgba(227,111,58,.6); }
+    pre { margin: 0; background: var(--code); border: 1px solid var(--line); border-radius: 0 10px 10px 10px; padding: 16px; overflow-x: auto; font: 14px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    pre.solo { border-radius: 10px; }
     .k { color: var(--kw); } .s { color: var(--str); } .c { color: var(--com); }
-    .bm img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 8px; display: block; margin-bottom: 12px; background: #000; }
-    .bm code { color: var(--mars-2); font-size: 15px; }
-    .feat h3 { color: var(--mars-2); }
-    footer { border-top: 1px solid var(--line); padding: 32px 0 48px; color: var(--muted); font-size: 14px; }
+    .install { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: var(--code); border: 1px solid rgba(227,111,58,.6); border-radius: 10px; padding: 14px 16px; font: 17px ui-monospace, SFMono-Regular, Menlo, monospace; margin: 18px 0 8px; }
+    .install code { white-space: nowrap; overflow-x: auto; }
+    button.copy { background: var(--mars); color: #170a03; border: 0; border-radius: 7px; padding: 7px 12px; font: 600 13px system-ui, sans-serif; cursor: pointer; flex: none; }
+    .bms { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 14px; }
+    .bms button { display: grid; grid-template-columns: 56px 1fr; gap: 12px; align-items: center; text-align: left; background: var(--glass); border: 1px solid var(--line); border-radius: 12px; padding: 8px; color: var(--text); cursor: pointer; font: 14px system-ui, sans-serif; }
+    .bms button img { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; }
+    .bms button small { display: block; color: var(--muted); font-size: 12px; }
+    .bms button[aria-pressed="true"] { border-color: var(--mars); box-shadow: 0 0 0 1px var(--mars) inset; }
+    .cta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+    .btn { display: inline-block; padding: 12px 20px; border-radius: 10px; text-decoration: none; font-weight: 700; }
+    .btn.primary { background: var(--mars); color: #170a03; }
+    .btn.ghost { border: 1px solid var(--line); color: var(--text); background: var(--glass); }
+    footer { position: relative; z-index: 2; padding: 28px 24px 40px; color: var(--muted); font-size: 13px; background: linear-gradient(0deg, rgba(7,8,12,.95), rgba(7,8,12,0)); }
+    footer p { color: var(--muted); max-width: 900px; }
 
-    @media (max-width: 860px) {
-      .hero { grid-template-columns: 1fr; gap: 28px; padding-top: 12px; }
-      .grid3 { grid-template-columns: 1fr; }
-      .grid4 { grid-template-columns: repeat(2, 1fr); }
-      nav a { margin-left: 12px; }
+    @media (max-width: 760px), (orientation: portrait) and (max-width: 1100px) {
+      body { font-size: 16px; }
+      .vignette { background: linear-gradient(180deg, rgba(7,8,12,.2) 0%, rgba(7,8,12,.75) 55%, rgba(7,8,12,.9) 100%); }
+      .step { align-items: flex-end; padding: 80px 16px 72px; }
+      .panel { margin: 0 auto; width: min(640px, 100%); }
+      .panel.glassy { background: var(--glass); border: 1px solid var(--line); border-radius: 16px; padding: 18px; backdrop-filter: blur(10px); }
+      .dots, .bar nav { display: none; }
+      .where { right: 16px; bottom: 16px; }
+      .stats { grid-template-columns: repeat(3, 1fr); }
+      p.lead { font-size: 18px; }
+      .hero-code, .scrollhint, .where, #globe .cesium-viewer-bottom { display: none; }
+      h1 { font-size: 46px; }
     }
-    @media (max-width: 480px) { nav { display: none; } .lead { font-size: 18px; } }
+
+    /* Small phones */
+    @media (max-width: 520px) { .bms { grid-template-columns: 1fr; } }
+    @media (max-width: 400px) {
+      .install { font-size: 14px; padding: 12px; } .step { padding-left: 12px; padding-right: 12px; }
+      .panel.glassy { padding: 16px 14px; } h1 { font-size: 40px; } h2 { font-size: 28px; }
+      .stat { padding: 10px 8px; } .stat b { font-size: 24px; } .tabs button { padding: 7px 9px; font-size: 13px; }
+      pre { font-size: 12.5px; padding: 12px; }
+    }
+    /* Short landscape screens (phones on their side, small laptops) */
+    @media (orientation: landscape) and (max-height: 560px) {
+      .step { padding-top: 64px; padding-bottom: 40px; }
+      .panel { width: min(480px, 54vw); }
+      h1 { font-size: 44px; margin: 6px 0 10px; } h2 { font-size: 28px; margin: 6px 0 10px; }
+      p.lead { font-size: 16px; } .hero-code, .scrollhint, .dots { display: none; }
+      .list { gap: 6px; } .shot { max-height: 42vh; object-fit: cover; object-position: top; }
+      .bar { padding: 10px 16px; } .bar nav a { margin-left: 14px; font-size: 14px; }
+      .where { bottom: 12px; right: 12px; }
+    }
+    /* Big screens */
+    @media (min-width: 1800px) { .stat b { font-size: 34px; } pre { font-size: 15px; } .install { font-size: 19px; } }
+    .bar { padding-left: max(24px, env(safe-area-inset-left)); padding-right: max(24px, env(safe-area-inset-right)); }
+    @media (prefers-reduced-motion: reduce) { .panel { transition: none; } html { scroll-behavior: auto; } }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header class="top">
-      <a class="brand" href="./"><img src="img/icon.png" alt="" />mars-globe</a>
-      <nav>
-        <a href="#usage">Usage</a>
-        <a href="#basemaps">Basemaps</a>
-        <a href="https://www.npmjs.com/package/mars-globe">npm</a>
-        <a href="https://github.com/aaron43210/MARSGIS/tree/main/packages/mars-globe">GitHub</a>
-      </nav>
-    </header>
+  <div id="loader" role="status"><div><i></i><span>Loading Mars…</span></div></div>
+  <div id="globe" aria-hidden="true"></div>
+  <div class="vignette"></div>
+  <div class="progress" id="progress"></div>
 
-    <main>
-      <div class="hero">
-        <div>
-          <div class="eyebrow">Open source · npm · CesiumJS</div>
-          <h1>mars-<span>globe</span></h1>
-          <p class="lead">A drop-in 3D Mars globe for CesiumJS. NASA Mars Trek basemaps, the Mars ellipsoid and correct tiling, in one line. No Cesium Ion token.</p>
-          <div class="install">
-            <code id="cmd">npm install mars-globe cesium</code>
-            <button class="copy" type="button" data-copy="cmd">Copy</button>
-          </div>
-          <div class="pills">
-            <span class="pill">MIT</span><span class="pill">TypeScript</span><span class="pill">0 dependencies</span><span class="pill">5 kB standalone</span>
-          </div>
-          <div class="links">
-            <a class="btn primary" href="#usage">Get started</a>
-            <a class="btn ghost" href="https://www.npmjs.com/package/mars-globe">View on npm</a>
-          </div>
-        </div>
+  <header class="bar">
+    <a class="brand" href="#top"><img src="img/icon.png" alt="" />MarsGIS</a>
+    <nav>
+      <a href="#package">mars-globe</a>
+      <a href="#docker">Docker</a>
+      <a href="https://www.npmjs.com/package/mars-globe">npm</a>
+      <a href="https://github.com/aaron43210/MARSGIS">GitHub</a>
+    </nav>
+  </header>
 
-        <div class="stage" aria-label="Live 3D Mars globe">
-          <span class="hint">Live demo · drag to rotate, scroll to zoom</span>
-          <mars-globe basemap="viking"></mars-globe>
-          <div class="switch" role="group" aria-label="Basemap">
-            <button type="button" data-bm="viking" aria-pressed="true">Viking</button>
-            <button type="button" data-bm="mola" aria-pressed="false">MOLA</button>
-            <button type="button" data-bm="mola-dem" aria-pressed="false">MOLA DEM</button>
-            <button type="button" data-bm="themis" aria-pressed="false">THEMIS</button>
-          </div>
+  <nav class="dots" id="dots" aria-label="Chapters"></nav>
+  <div class="where" id="where"><b id="wname">Full globe</b><span class="hud" id="hud" aria-hidden="true">— · — · —</span></div>
+
+  <main>
+    <!-- 0 -->
+    <section class="step" id="top" data-name="Full globe" data-lon="20" data-lat="12" data-h="12500" data-bm="viking" data-spin="1">
+      <div class="panel">
+        <div class="kicker">npm package · open source</div>
+        <h1>mars-<span>globe</span></h1>
+        <p class="lead">A real 3D Mars globe for <span class="rot" id="rot">your web app</span>, in one line. The planet behind this text <em>is</em> the package.</p>
+        <div class="install"><code id="cmd0">npm install mars-globe cesium</code><button class="copy" type="button" data-copy="cmd0">Copy</button></div>
+<pre class="solo hero-code"><span class="k">import</span> { createMarsGlobe } <span class="k">from</span> <span class="s">'mars-globe'</span>;
+createMarsGlobe(<span class="s">'map'</span>, { defaultBasemap: <span class="s">'viking'</span> });</pre>
+        <div class="tags"><span class="tag">Mars IAU 2000 shape</span><span class="tag">4 NASA basemaps</span><span class="tag">No Ion token</span><span class="tag">0 dependencies</span><span class="tag">5 kB</span></div>
+        <div class="cta">
+          <a class="btn primary" href="#package">Use it</a>
+          <a class="btn ghost" href="#problem">Why I built it</a>
         </div>
+        <div class="scrollhint"><i></i> Scroll to fly across Mars and see MarsGIS, the project it came from</div>
       </div>
+    </section>
 
-      <section id="why">
-        <h2>Why mars-globe</h2>
-        <p class="sub">Setting up CesiumJS for Mars is fiddly and poorly documented. This package does it for you.</p>
-        <div class="grid3">
-          <div class="card feat"><h3>Real Mars shape</h3><p>The IAU 2000 Mars ellipsoid, 3,396 km × 3,376 km, installed before the viewer is created.</p></div>
-          <div class="card feat"><h3>No Ion token</h3><p>Earth atmosphere, sky box and geocoder removed. No Cesium account or key needed.</p></div>
-          <div class="card feat"><h3>Correct tiling</h3><p>NASA Trek's geographic 2 × 1 tile grid, so every basemap lines up with no reprojection.</p></div>
-          <div class="card feat"><h3>Three entry points</h3><p>An ES module, a <code>&lt;mars-globe&gt;</code> Web Component and a plugin for an existing Viewer.</p></div>
-          <div class="card feat"><h3>Typed and SSR-safe</h3><p>TypeScript types included. Imports cleanly in Node, SSR frameworks and test runners.</p></div>
-          <div class="card feat"><h3>Tiny</h3><p>Zero runtime dependencies. Cesium is a peer dependency, so you keep your own version.</p></div>
+    <!-- 1 -->
+    <section class="step" id="problem" data-name="MOLA elevation" data-lon="-60" data-lat="-10" data-h="9500" data-bm="mola-dem">
+      <div class="panel glassy">
+        <div class="kicker">01 · The problem</div>
+        <h2>Mars data is hard to reach</h2>
+        <ul class="list">
+          <li><span class="n">1</span><div><b>Locked in archives.</b> NASA's CRISM images sit in the Planetary Data System. One scene has 489 spectral bands for every pixel.</div></li>
+          <li><span class="n">2</span><div><b>Desktop-only tools.</b> Mineral mapping usually means desktop software, scripts and manual reprojection.</div></li>
+          <li><span class="n">3</span><div><b>Web maps assume Earth.</b> CesiumJS starts with the Earth, its atmosphere and an Ion token. Setting it up for Mars is fiddly.</div></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section class="step" id="nili" data-name="Nili Fossae · 22°N 77°E" data-lon="77.08" data-lat="22.26" data-h="900" data-bm="viking" data-footprint="1">
+      <div class="panel glassy">
+        <div class="kicker">02 · Meet MarsGIS</div>
+        <h2>From NASA archive to mineral map, in the browser</h2>
+        <p>The globe is now over <b>Nili Fossae</b>, one of the most studied mineral regions on Mars. The orange box is a real CRISM observation, <code>frt00003e12</code>.</p>
+        <ul class="list">
+          <li><span class="n">1</span><div><b>Find</b> a scene in the catalogue, or fetch new ones live from NASA's ODE archive.</div></li>
+          <li><span class="n">2</span><div><b>Choose</b> a reference mineral: olivine, carbonate or clay.</div></li>
+          <li><span class="n">3</span><div><b>Run SAM</b>, the Spectral Angle Mapper, on every pixel.</div></li>
+          <li><span class="n">4</span><div><b>View</b> the result as map tiles, then <b>export</b> COG files with a provenance record.</div></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 3 -->
+    <section class="step" id="app" data-name="CRISM frt00003e12" data-lon="77.08" data-lat="22.26" data-h="140" data-bm="viking" data-footprint="1" data-pitch="-55">
+      <div class="panel glassy">
+        <div class="kicker">03 · The app</div>
+        <h2>The MarsGIS workspace</h2>
+        <img class="shot" src="img/app.jpg" alt="MarsGIS app: catalogue on the left, a Mg-carbonate candidate layer over Nili Fossae, results on the right" loading="lazy" />
+        <div class="cap">Mg-carbonate candidates over Nili Fossae: 144 candidate pixels, 6.3% of valid pixels.</div>
+        <p class="warn" style="margin-top:12px">SAM finds candidate spectral matches, not confirmed deposits. Every result says so and keeps the raw angle map next to the mask.</p>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section class="step" id="science" data-name="Nili Fossae region" data-lon="77" data-lat="20" data-h="2600" data-bm="mola" data-footprint="1">
+      <div class="panel glassy">
+        <div class="kicker">04 · Validated</div>
+        <h2>Tested on real Mars data</h2>
+        <p>On the real CRISM scene, MarsGIS passed three checks against published geology (Ehlmann et al. 2008, Mustard et al. 2009): carbonate is patchy, not everywhere; no mineral wins every pixel; olivine is broader than carbonate.</p>
+        <div class="stats">
+          <div class="stat"><b data-count="489">489</b><span>bands in the cube</span></div>
+          <div class="stat"><b data-count="238">238</b><span>bands used, 1000–2600 nm</span></div>
+          <div class="stat"><b data-count="3" data-suffix=" / 3">3 / 3</b><span>validation checks passed</span></div>
         </div>
-      </section>
+        <p class="cap">On the synthetic test cube, carbonate and olivine were found with precision, recall and IoU of 1.0.</p>
+      </div>
+    </section>
 
-      <section id="usage">
-        <h2>Three ways to use it</h2>
-        <p class="sub">Pick the one that fits your project. Cesium needs its static assets: set <code>window.CESIUM_BASE_URL</code> and load <code>widgets.css</code>.</p>
-        <div class="grid3">
-          <div class="card">
-            <h3>1. npm module</h3><p>React, Vue, Svelte or plain JavaScript.</p>
-<pre><span class="k">import</span> { createMarsGlobe } <span class="k">from</span> <span class="s">'mars-globe'</span>;
+    <!-- 5 -->
+    <section class="step" id="grid" data-name="Tharsis to Arabia" data-lon="20" data-lat="10" data-h="13000" data-bm="themis" data-pins="1">
+      <div class="panel glassy">
+        <div class="kicker">05 · Coordinates done right</div>
+        <h2>Every layer lines up</h2>
+        <p>MarsGIS uses the official <b>IAU 2000 Mars</b> system and NASA Trek's 2 × 1 geographic tile grid everywhere. Basemaps, results, footprints and clicks align with no reprojection.</p>
+        <p>We checked it against live NASA tiles at the four pins on the globe: <b>Jezero</b>, <b>Gale</b>, <b>Olympus Mons</b> and <b>Nili Fossae</b>. All four returned HTTP 200 and the maths passed.</p>
+      </div>
+    </section>
+
+    <!-- 6 -->
+    <section class="step" id="stack" data-name="Valles Marineris" data-lon="-70" data-lat="-9" data-h="3200" data-bm="mola" data-pitch="-50">
+      <div class="panel glassy">
+        <div class="kicker">06 · The stack</div>
+        <h2>Chosen to stay simple</h2>
+        <p><b>Frontend:</b> React 19, TypeScript and Vite, with one persistent CesiumJS viewer. The browser never does raster maths.</p>
+        <p><b>Backend:</b> Python 3.12 and FastAPI, because GDAL, rasterio and the spectral tools live in Python. rio-tiler turns results into map tiles on a Mars grid.</p>
+        <p><b>Engine:</b> vectorised numpy SAM that writes Cloud Optimized GeoTIFFs plus <code>provenance.json</code>.</p>
+        <div class="tags"><span class="tag">CesiumJS</span><span class="tag">React 19</span><span class="tag">FastAPI</span><span class="tag">rio-tiler</span><span class="tag">numpy</span><span class="tag">COG</span><span class="tag">OpenAPI</span></div>
+      </div>
+    </section>
+
+    <!-- 7 -->
+    <section class="step" id="package" data-name="Olympus Mons" data-lon="-134" data-lat="18.6" data-h="9000" data-bm="viking">
+      <div class="panel glassy">
+        <div class="kicker">07 · For developers</div>
+        <h2>Add Mars to your app in one line</h2>
+        <p>The globe on this page is <b>mars-globe</b>, the package I extracted from MarsGIS. It sets up the Mars ellipsoid, NASA Trek basemaps and tiling for you. No Ion token, zero dependencies, typed, 5 kB standalone.</p>
+        <div class="install"><code id="cmd">npm install mars-globe cesium</code><button class="copy" type="button" data-copy="cmd">Copy</button></div>
+        <div class="tabs" role="tablist">
+          <button role="tab" aria-selected="true" data-tab="t1">npm module</button>
+          <button role="tab" aria-selected="false" data-tab="t2">Web Component</button>
+          <button role="tab" aria-selected="false" data-tab="t3">Cesium plugin</button>
+        </div>
+<pre id="t1"><span class="k">import</span> { createMarsGlobe } <span class="k">from</span> <span class="s">'mars-globe'</span>;
 
 <span class="k">const</span> globe = createMarsGlobe(<span class="s">'map'</span>, {
   defaultBasemap: <span class="s">'viking'</span>,
 });
 globe.setBasemap(<span class="s">'mola'</span>);</pre>
-          </div>
-          <div class="card">
-            <h3>2. Web Component</h3><p>Any HTML page. No build step.</p>
-<pre><span class="c">&lt;!-- after Cesium.js --&gt;</span>
-&lt;script src=<span class="s">"https://cdn.jsdelivr.net/
-  npm/mars-globe@1/dist/
-  mars-globe.min.js"</span>&gt;&lt;/script&gt;
+<pre id="t2" hidden><span class="c">&lt;!-- after Cesium.js --&gt;</span>
+&lt;script src=<span class="s">"https://cdn.jsdelivr.net/npm/mars-globe@1/dist/mars-globe.min.js"</span>&gt;&lt;/script&gt;
 
-&lt;mars-globe basemap=<span class="s">"themis"</span>&gt;
-&lt;/mars-globe&gt;</pre>
-          </div>
-          <div class="card">
-            <h3>3. Cesium plugin</h3><p>Turn an existing Viewer into Mars.</p>
-<pre><span class="k">import</span> { Viewer } <span class="k">from</span> <span class="s">'cesium'</span>;
-<span class="k">import</span> { installMarsEllipsoid,
-  setupMarsGlobe } <span class="k">from</span> <span class="s">'mars-globe'</span>;
+&lt;mars-globe basemap=<span class="s">"themis"</span>
+  style=<span class="s">"width:100%;height:480px"</span>&gt;&lt;/mars-globe&gt;</pre>
+<pre id="t3" hidden><span class="k">import</span> { Viewer } <span class="k">from</span> <span class="s">'cesium'</span>;
+<span class="k">import</span> { installMarsEllipsoid, setupMarsGlobe } <span class="k">from</span> <span class="s">'mars-globe'</span>;
 
-installMarsEllipsoid();
+installMarsEllipsoid();          <span class="c">// before the Viewer</span>
 <span class="k">const</span> viewer = <span class="k">new</span> Viewer(<span class="s">'app'</span>);
 setupMarsGlobe(viewer, { basemap: <span class="s">'viking'</span> });</pre>
-          </div>
-        </div>
-      </section>
+      </div>
+    </section>
 
-      <section id="basemaps">
-        <h2>Four NASA Mars Trek basemaps</h2>
-        <p class="sub">Streamed live from NASA Mars Trek. Choose one with <code>defaultBasemap</code> or switch at runtime with <code>setBasemap(id)</code>.</p>
-        <div class="grid4">
-          <div class="card bm"><img src="img/mg_viking.jpg" alt="Mars globe with the Viking MDIM 2.1 colour mosaic" loading="lazy" /><code>viking</code><p>Viking MDIM 2.1 colour mosaic · 232 m</p></div>
-          <div class="card bm"><img src="img/mg_mola.jpg" alt="Mars globe with MOLA colour shaded relief" loading="lazy" /><code>mola</code><p>MOLA colour shaded relief · 463 m</p></div>
-          <div class="card bm"><img src="img/mg_mola-dem.jpg" alt="Mars globe with MOLA grayscale elevation" loading="lazy" /><code>mola-dem</code><p>MOLA elevation, brighter is higher · 463 m</p></div>
-          <div class="card bm"><img src="img/mg_themis.jpg" alt="Mars globe with THEMIS daytime infrared" loading="lazy" /><code>themis</code><p>THEMIS daytime infrared · 100 m</p></div>
+    <!-- 8 -->
+    <section class="step" id="basemaps" data-name="Try a basemap" data-lon="-60" data-lat="0" data-h="10500">
+      <div class="panel glassy">
+        <div class="kicker">08 · Built-in basemaps</div>
+        <h2>Four NASA maps. Try them.</h2>
+        <p>Click one: the globe behind this text switches, the same way <code>globe.setBasemap(id)</code> does in your app.</p>
+        <div class="bms" id="bms">
+          <button type="button" data-bm="viking" aria-pressed="false"><img src="img/mg_viking.jpg" alt="" /><span><code>viking</code><small>Colour mosaic · 232 m</small></span></button>
+          <button type="button" data-bm="mola" aria-pressed="false"><img src="img/mg_mola.jpg" alt="" /><span><code>mola</code><small>Shaded relief · 463 m</small></span></button>
+          <button type="button" data-bm="mola-dem" aria-pressed="false"><img src="img/mg_mola-dem.jpg" alt="" /><span><code>mola-dem</code><small>Elevation, brighter = higher · 463 m</small></span></button>
+          <button type="button" data-bm="themis" aria-pressed="false"><img src="img/mg_themis.jpg" alt="" /><span><code>themis</code><small>Day infrared · 100 m</small></span></button>
         </div>
-      </section>
-    </main>
-  </div>
+      </div>
+    </section>
+
+    <!-- 9 -->
+    <section class="step" id="docker" data-name="Jezero crater" data-lon="77.4" data-lat="18.4" data-h="2200" data-bm="viking" data-pitch="-60">
+      <div class="panel glassy">
+        <div class="kicker">09 · Run the full app</div>
+        <h2>The whole of MarsGIS in one container</h2>
+        <p>The release image on GitHub Container Registry holds the web app, the API, the SAM engine, a SQLite database and a sample cube. It runs on Intel and ARM.</p>
+<pre class="solo"><span class="c"># start MarsGIS</span>
+docker run -d -p 8080:8080 \
+  -v marsgis-data:/data \
+  ghcr.io/aaron43210/marsgis:latest
+
+<span class="c"># open http://localhost:8080</span>
+curl localhost:8080/api/health</pre>
+      </div>
+    </section>
+
+    <!-- 10 -->
+    <section class="step" id="start" data-name="Full globe" data-lon="20" data-lat="10" data-h="11000" data-bm="viking" data-spin="1">
+      <div class="panel glassy">
+        <div class="kicker">Your turn</div>
+        <h2>Build something on Mars</h2>
+        <p class="lead">One install, and your app has the real Mars.</p>
+        <div class="install"><code id="cmd2">npm install mars-globe cesium</code><button class="copy" type="button" data-copy="cmd2">Copy</button></div>
+        <div class="cta">
+          <a class="btn primary" href="https://www.npmjs.com/package/mars-globe">Get mars-globe on npm</a>
+          <a class="btn ghost" href="https://github.com/aaron43210/MARSGIS">MarsGIS on GitHub</a>
+        </div>
+      </div>
+    </section>
+  </main>
 
   <footer>
-    <div class="wrap">
-      <p>mars-globe is MIT licensed and was extracted from <a href="https://github.com/aaron43210/MARSGIS">MarsGIS</a>, an open-source web GIS for Mars, by Aaron R.</p>
-      <p>Basemaps courtesy of NASA/JPL-Caltech, USGS (Viking MDIM 2.1), NASA/GSFC (MOLA), ASU (THEMIS) and NASA Mars Trek. Rendered with CesiumJS.</p>
-    </div>
+    <p>MarsGIS and mars-globe are MIT licensed, by Aaron R. Basemaps courtesy of NASA/JPL-Caltech, USGS (Viking MDIM 2.1), NASA/GSFC (MOLA), ASU (THEMIS) and NASA Mars Trek. CRISM data: NASA/JPL-Caltech/JHUAPL. Rendered with CesiumJS.</p>
   </footer>
 
   <script>window.CESIUM_BASE_URL = 'https://cdn.jsdelivr.net/npm/cesium@1.146.0/Build/Cesium/';</script>
   <script src="https://cdn.jsdelivr.net/npm/cesium@1.146.0/Build/Cesium/Cesium.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mars-globe@1.0.1/dist/mars-globe.min.js"></script>
   <script>
-    (function () {
-      var el = document.querySelector('mars-globe');
-      var buttons = document.querySelectorAll('.switch button');
-      buttons.forEach(function (b) {
-        b.addEventListener('click', function () {
-          el.setAttribute('basemap', b.dataset.bm);
-          buttons.forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); });
-        });
-      });
-      // Slow auto-spin until the visitor touches the globe.
-      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      var spinning = !reduce;
-      function stop() { spinning = false; }
-      el.addEventListener('pointerdown', stop);
-      el.addEventListener('wheel', stop, { passive: true });
-      function hook() {
-        var g = el.marsGlobe;
-        if (!g) return requestAnimationFrame(hook);
-        g.viewer.clock.onTick.addEventListener(function () {
-          if (spinning) g.viewer.scene.camera.rotate(Cesium.Cartesian3.UNIT_Z, -0.0015);
-        });
+  (function () {
+    var C = window.Cesium, MG = window.MarsGlobe;
+    var loader = document.getElementById('loader');
+    function hideLoader() { if (loader) { loader.classList.add('done'); var l = loader; loader = null; setTimeout(function () { l.remove(); }, 900); } }
+    if (!C || !MG) { loader.querySelector('span').textContent = 'Could not load the 3D globe. Check your connection and refresh.'; return; }
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var stackedQ = window.matchMedia('(max-width: 760px), (orientation: portrait) and (max-width: 1100px)');
+
+    // NASA Trek is one server: allow more parallel tile requests to it.
+    C.RequestScheduler.requestsByServer['trek.nasa.gov:443'] = 32;
+
+    // ---- The globe: one mars-globe instance ----
+    var globe = MG.createMarsGlobe('globe', { defaultBasemap: 'viking' });
+    var viewer = globe.viewer, scene = viewer.scene, camera = scene.camera;
+    scene.screenSpaceCameraController.enableInputs = false;   // scrolling drives the camera
+    scene.backgroundColor = C.Color.fromCssColorString('#07080c');
+    scene.fog.enabled = false;
+    // Only draw when something changes (camera move, tile arrives, fade). Saves battery and keeps laptops cool.
+    scene.requestRenderMode = true;
+    scene.maximumRenderTimeChange = Infinity;
+    scene.globe.preloadSiblings = true;
+    scene.globe.tileCacheSize = 600;
+    scene.globe.maximumScreenSpaceError = 2.5;
+    scene.globe.baseColor = C.Color.fromCssColorString('#7a3a1f');   // never a blue/black hole
+    viewer.resolutionScale = Math.min(window.devicePixelRatio || 1, 1.5);
+    function setFov() {
+      // Wide layout: canvas is 1.44x the viewport, so widen the view to keep the globe's size.
+      camera.frustum.fov = stackedQ.matches ? C.Math.toRadians(42) : 2 * Math.atan(Math.tan(C.Math.toRadians(30)) * 1.44);
+    }
+    setFov();
+
+    // ---- Basemaps: instant local whole-planet image underneath, live Trek tiles on top ----
+    var layers = viewer.imageryLayers;
+    var localCache = {};
+    function localLayer(id) {
+      // 2048 x 1024 equirectangular mosaic built from Trek level-2 tiles, served with the site.
+      var p = localCache[id] || (localCache[id] = C.SingleTileImageryProvider.fromUrl('img/' + id + '.jpg', { rectangle: C.Rectangle.MAX_VALUE }));
+      return C.ImageryLayer.fromProviderAsync(p);
+    }
+    var trek0 = layers.get(0);                    // the Trek layer mars-globe created
+    var local0 = localLayer('viking');
+    layers.add(local0, 0);                        // under it
+    var current = { id: 'viking', layers: [local0, trek0] }, finish = null;
+    ['mola', 'mola-dem', 'themis'].forEach(function (id) { localCache[id] = C.SingleTileImageryProvider.fromUrl('img/' + id + '.jpg', { rectangle: C.Rectangle.MAX_VALUE }); });
+
+    function setBasemap(id) {
+      if (!id || id === current.id) return;
+      if (finish) finish();
+      var loc = localLayer(id), trek = layers.addImageryProvider(MG.basemapProvider(id));
+      layers.raiseToTop(trek);
+      layers.add(loc, layers.indexOf(trek));      // local just under its Trek layer, above the old pair
+      var next = { id: id, layers: [loc, trek] }, old = current;
+      current = next;
+      next.layers.forEach(function (l) { l.alpha = 0; });
+      var t0 = performance.now(), dur = reduce ? 0 : 750, stop = false;
+      function done() { next.layers.forEach(function (l) { l.alpha = 1; }); old.layers.forEach(function (l) { if (layers.contains(l)) layers.remove(l, true); }); finish = null; }
+      finish = function () { stop = true; done(); };
+      (function step(now) {
+        if (stop) return;
+        var k = dur ? Math.min(1, (now - t0) / dur) : 1, a = k * k * (3 - 2 * k);
+        next.layers.forEach(function (l) { l.alpha = a; });
+        scene.requestRender();
+        if (k < 1) requestAnimationFrame(step); else done();
+      })(t0);
+      document.querySelectorAll('#bms button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.bm === id)); });
+    }
+
+    // ---- Prefetch: warm the browser cache with the Trek tiles the next chapters will need ----
+    var TREK = { viking: ['Mars_Viking_MDIM21_ClrMosaic_global_232m', 'jpg', 7], mola: ['Mars_MGS_MOLA_ClrShade_merge_global_463m', 'jpg', 6],
+      'mola-dem': ['mola128_mola64_merge_90Nto90S_SimpleC_clon0', 'png', 6], themis: ['THEMIS_DayIR_ControlledMosaics_100m_v2_oct2018', 'png', 7] };
+    var fetched = {}, queue = [], active = 0;
+    function pump() {
+      while (active < 6 && queue.length) {
+        var u = queue.shift(); if (fetched[u]) continue; fetched[u] = 1; active++;
+        var im = new Image(); im.crossOrigin = 'anonymous';   // same request mode as Cesium, so the cache is shared
+        im.onload = im.onerror = function () { active--; pump(); };
+        im.src = u;
       }
-      hook();
-      document.querySelectorAll('button.copy').forEach(function (b) {
-        b.addEventListener('click', function () {
-          var t = document.getElementById(b.dataset.copy).textContent;
-          (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(
-            function () { b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy'; }, 1500); },
-            function () { b.textContent = 'Select & copy'; });
+    }
+    function prefetch(stop) {
+      var t = TREK[stop.bm]; if (!t) return;
+      var km = stop.h / 1000, viewDeg = Math.min(km * 1.6 / 59, 180);
+      var lvl = Math.max(1, Math.min(t[2], Math.ceil(Math.log2(180 * 1600 / (256 * viewDeg)))));
+      [lvl - 1, lvl].forEach(function (L) {
+        var deg = 180 / Math.pow(2, L), cols = 2 * Math.pow(2, L), rows = Math.pow(2, L);
+        var x0 = Math.floor((stop.lon - viewDeg / 2 + 180) / deg), x1 = Math.floor((stop.lon + viewDeg / 2 + 180) / deg);
+        var y0 = Math.max(0, Math.floor((90 - (stop.lat + viewDeg * .4)) / deg)), y1 = Math.min(rows - 1, Math.floor((90 - (stop.lat - viewDeg * .55)) / deg));
+        if (x1 - x0 > 10) { x0 = Math.floor((stop.lon + 180) / deg) - 5; x1 = x0 + 10; }
+        for (var y = y0; y <= y1; y++) for (var x = x0; x <= x1; x++) {
+          var xx = ((x % cols) + cols) % cols;
+          queue.push('https://trek.nasa.gov/tiles/Mars/EQ/' + t[0] + '/1.0.0//default/default028mm/' + L + '/' + y + '/' + xx + '.' + t[1]);
+        }
+      });
+      pump();
+    }
+
+    // ---- Map features ----
+    var orange = C.Color.fromCssColorString('#f4a06e');
+    var labelStyle = { font: '600 14px system-ui, sans-serif', fillColor: C.Color.WHITE, showBackground: true,
+      backgroundColor: C.Color.fromCssColorString('#07080c').withAlpha(0.72), disableDepthTestDistance: Number.POSITIVE_INFINITY };
+    var fp = viewer.entities.add({ show: false, rectangle: {
+      coordinates: C.Rectangle.fromDegrees(76.9404, 22.1347, 77.2127, 22.3863),   // CRISM frt00003e12 footprint
+      material: C.Color.fromCssColorString('#e36f3a').withAlpha(0.22), outline: true, outlineColor: orange, height: 0 } });
+    var fpLabel = viewer.entities.add({ show: false, position: C.Cartesian3.fromDegrees(77.08, 22.45),
+      label: Object.assign({ text: 'CRISM frt00003e12', pixelOffset: new C.Cartesian2(0, -14) }, labelStyle) });
+    var pins = [['Jezero', 77.4, 18.4], ['Gale', 137.4, -5.4], ['Olympus Mons', -133.8, 18.65], ['Nili Fossae', 77.0, 21.0]].map(function (s) {
+      return viewer.entities.add({ show: false, position: C.Cartesian3.fromDegrees(s[1], s[2]),
+        point: { pixelSize: 9, color: orange, outlineColor: C.Color.WHITE, outlineWidth: 2, disableDepthTestDistance: Number.POSITIVE_INFINITY },
+        label: Object.assign({ text: s[0], pixelOffset: new C.Cartesian2(0, -18) }, labelStyle) });
+    });
+
+    // ---- Camera stops ----
+    var steps = Array.prototype.slice.call(document.querySelectorAll('.step'));
+    var stops = steps.map(function (s) {
+      var d = s.dataset;
+      return { lon: +d.lon, lat: +d.lat, h: +d.h * 1000, pitch: d.pitch ? +d.pitch : -90, spin: !!d.spin,
+               bm: d.bm || null, name: d.name, footprint: !!d.footprint, pins: !!d.pins };
+    });
+    stops.forEach(function (s, i) { if (!s.bm) s.bm = i ? stops[i - 1].bm : 'viking'; });
+
+    function centres() { return steps.map(function (s) { return s.offsetTop + s.offsetHeight / 2 - window.innerHeight / 2; }); }
+    var mids = centres();
+    var rz; window.addEventListener('resize', function () { clearTimeout(rz); rz = setTimeout(function () { mids = centres(); setFov(); }, 120); });
+    (stackedQ.addEventListener ? stackedQ.addEventListener.bind(stackedQ, 'change') : stackedQ.addListener.bind(stackedQ))(function () { setFov(); mids = centres(); });
+    function stopIndex() {
+      var y = window.scrollY;
+      if (y <= mids[0]) return 0;
+      for (var i = 0; i < mids.length - 1; i++) if (y < mids[i + 1]) return i + (y - mids[i]) / (mids[i + 1] - mids[i]);
+      return mids.length - 1;
+    }
+    function ease(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+    function lerp(a, b, t) { return a + (b - a) * t; }
+    function lerpLon(a, b, t) { var d = ((b - a + 540) % 360) - 180; return a + d * t; }
+    function target(f) {
+      var i = Math.min(Math.floor(f), stops.length - 1), j = Math.min(i + 1, stops.length - 1);
+      var t = ease(f - i), a = stops[i], b = stops[j];
+      var lift = Math.sin(Math.PI * t) * Math.min(Math.abs(a.lon - b.lon) + Math.abs(a.lat - b.lat), 120) * 60000;
+      return { lon: lerpLon(a.lon, b.lon, t), lat: lerp(a.lat, b.lat, t), h: Math.exp(lerp(Math.log(a.h), Math.log(b.h), t)) + lift,
+               pitch: lerp(a.pitch, b.pitch, t), spinW: (a.spin ? 1 - t : 0) + (b.spin ? t : 0) };
+    }
+
+    var cur = null, spinLon = 0, lastIdx = -1;
+    var wname = document.getElementById('wname'), hud = document.getElementById('hud'), dots = document.getElementById('dots');
+    steps.forEach(function (s) { var a = document.createElement('a'); a.href = '#' + s.id; a.setAttribute('aria-label', s.dataset.name); dots.appendChild(a); });
+    var dotEls = dots.querySelectorAll('a');
+
+    function place(p) {
+      var lon = p.lon + spinLon * p.spinW, pitch = C.Math.toRadians(p.pitch), dest;
+      if (p.pitch > -89) {
+        var back = (p.h / 1000) / 59 * Math.cos(-pitch);   // ~59 km per degree on Mars
+        dest = C.Cartesian3.fromDegrees(lon, p.lat - back, p.h * Math.sin(-pitch));
+      } else dest = C.Cartesian3.fromDegrees(lon, p.lat, p.h);
+      camera.setView({ destination: dest, orientation: { heading: 0, pitch: pitch, roll: 0 } });
+      return lon;
+    }
+    function fmtLat(v) { return Math.abs(v).toFixed(2) + '°' + (v >= 0 ? 'N' : 'S'); }
+    function fmtLon(v) { v = ((v + 540) % 360) - 180; return Math.abs(v).toFixed(2) + '°' + (v >= 0 ? 'E' : 'W'); }
+
+    var lastT = performance.now(), hudT = 0, first = true, lastDraw = 0;
+    function frame(now) {
+      var dt = Math.min(64, now - lastT); lastT = now;
+      var f = stopIndex(), tgt = target(f);
+      if (!cur) cur = { lon: tgt.lon, lat: tgt.lat, h: 40000000, pitch: tgt.pitch, spinW: tgt.spinW };
+      var k = reduce ? 1 : 1 - Math.exp(-dt / 260);
+      cur.lon = lerpLon(cur.lon, tgt.lon, k); cur.lat = lerp(cur.lat, tgt.lat, k);
+      cur.h = Math.exp(lerp(Math.log(cur.h), Math.log(tgt.h), k));
+      cur.pitch = lerp(cur.pitch, tgt.pitch, k); cur.spinW = lerp(cur.spinW, tgt.spinW, k);
+      if (!reduce) spinLon -= dt * 0.0016 * cur.spinW;
+      // Skip work when the camera has settled and nothing spins.
+      var moving = Math.abs(cur.h - tgt.h) > tgt.h * 1e-4 || Math.abs(((tgt.lon - cur.lon + 540) % 360) - 180) > 1e-4 ||
+                   Math.abs(cur.lat - tgt.lat) > 1e-4 || Math.abs(cur.pitch - tgt.pitch) > 1e-3 || (!reduce && cur.spinW > 0.01);
+      var flying = moving && !(Math.abs(cur.h - tgt.h) <= tgt.h * 1e-4 && Math.abs(cur.lat - tgt.lat) <= 1e-4 && Math.abs(cur.pitch - tgt.pitch) <= 1e-3);
+      // Only the idle spin left: 30 fps is plenty and halves the GPU work.
+      if ((!moving && !first) || (!flying && now - lastDraw < 33)) { requestAnimationFrame(frame); return; }
+      first = false; lastDraw = now;
+      var lon = place(cur);
+      scene.requestRender();
+      if (now - hudT > 80) {   // live readout of where the camera is
+        hudT = now;
+        hud.textContent = fmtLat(cur.lat) + ' · ' + fmtLon(lon) + ' · ' + Math.round(cur.h / 1000).toLocaleString('en') + ' km';
+      }
+      var idx = Math.round(f);
+      if (idx !== lastIdx) {
+        lastIdx = idx;
+        var s = stops[idx];
+        setBasemap(s.bm);
+        fp.show = fpLabel.show = s.footprint;
+        pins.forEach(function (p) { p.show = s.pins; });
+        wname.textContent = s.name;
+        dotEls.forEach(function (el, k2) { el.classList.toggle('on', k2 === idx); });
+        [idx + 1, idx + 2, idx - 1].forEach(function (n) { if (stops[n]) prefetch(stops[n]); });
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+
+    // Loader: wait for the local planet image (fast), never for the slow server.
+    local0.readyEvent.addEventListener(function () { setTimeout(hideLoader, 350); });
+    setTimeout(hideLoader, 6000);
+    // After first paint, quietly warm every chapter so later scrolling is instant.
+    setTimeout(function () { stops.forEach(prefetch); }, 2500);
+
+    // ---- Dynamic text ----
+    // Headings rise in word by word.
+    document.querySelectorAll('.panel h2, .panel h1').forEach(function (h) {
+      var i = 0;
+      (function walk(node) {
+        Array.prototype.slice.call(node.childNodes).forEach(function (c) {
+          if (c.nodeType === 3) {
+            var frag = document.createDocumentFragment();
+            c.textContent.split(/(\s+)/).forEach(function (part) {
+              if (!part) return;
+              if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(part)); return; }
+              var sp = document.createElement('span'); sp.className = 'w'; sp.style.setProperty('--i', i++); sp.textContent = part; frag.appendChild(sp);
+            });
+            node.replaceChild(frag, c);
+          } else if (c.nodeType === 1) walk(c);
+        });
+      })(h);
+    });
+    // Lists, tags, stats, code and buttons follow one after another.
+    document.querySelectorAll('.panel').forEach(function (p) {
+      p.querySelectorAll('.list li, .tag, .stat, .bms button, .cta .btn, pre, .install, .shot, .warn').forEach(function (el, i) {
+        el.classList.add('stag'); el.style.setProperty('--i', i);
+      });
+    });
+    // Kickers decode like a terminal.
+    var glyphs = '01<>/{}#*+=MARS';
+    function scramble(el) {
+      var final = el.dataset.text || (el.dataset.text = el.textContent), n = 0, total = 18;
+      (function tick() {
+        n++;
+        el.textContent = final.split('').map(function (ch, i) {
+          if (ch === ' ' || i < (n / total) * final.length) return ch;
+          return glyphs[(Math.random() * glyphs.length) | 0];
+        }).join('');
+        if (n < total) setTimeout(tick, 35); else el.textContent = final;
+      })();
+    }
+    // Numbers count up.
+    function countUp(el) {
+      var to = +el.dataset.count, suf = el.dataset.suffix || '', t0 = performance.now(), dur = 1200;
+      (function tick(now) {
+        var k = Math.min(1, (now - t0) / dur), v = Math.round(to * (1 - Math.pow(1 - k, 3)));
+        el.textContent = v.toLocaleString('en') + suf;
+        if (k < 1) requestAnimationFrame(tick);
+      })(t0);
+    }
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (!e.isIntersecting || e.target.classList.contains('in')) return;
+        e.target.classList.add('in');
+        if (reduce) return;
+        var kick = e.target.querySelector('.kicker'); if (kick) scramble(kick);
+        e.target.querySelectorAll('[data-count]').forEach(function (el) { setTimeout(function () { countUp(el); }, 400); });
+      });
+    }, { threshold: 0.25 });
+    steps.forEach(function (s) { io.observe(s); });
+
+    // Hero: the words cycle like someone typing.
+    var rot = document.getElementById('rot');
+    if (rot && !reduce) {
+      var words = ['your web app', 'React', 'Vue', 'Svelte', 'plain HTML', 'your Cesium app'], wi = 0;
+      (function cycle() {
+        var w = words[wi = (wi + 1) % words.length], txt = rot.textContent;
+        (function del() {
+          if (txt.length) { txt = txt.slice(0, -1); rot.textContent = txt; setTimeout(del, 35); }
+          else (function type(i) { rot.textContent = w.slice(0, i); if (i < w.length) setTimeout(function () { type(i + 1); }, 70); else setTimeout(cycle, 1800); })(1);
+        })();
+      })();
+    }
+
+    // ---- Page UI ----
+    var bar = document.getElementById('progress');
+    window.addEventListener('scroll', function () {
+      var max = document.documentElement.scrollHeight - window.innerHeight;
+      bar.style.transform = 'scaleX(' + (max > 0 ? window.scrollY / max : 0) + ')';
+    }, { passive: true });
+    document.querySelectorAll('#bms button').forEach(function (b) {
+      b.addEventListener('click', function () { setBasemap(b.dataset.bm); stops[lastIdx].bm = b.dataset.bm; });
+    });
+    document.querySelectorAll('.tabs button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.querySelectorAll('.tabs button').forEach(function (o) {
+          var on = o === b; o.setAttribute('aria-selected', String(on)); document.getElementById(o.dataset.tab).hidden = !on;
         });
       });
-    })();
+    });
+    document.querySelectorAll('button.copy').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var t = document.getElementById(b.dataset.copy).textContent;
+        (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(
+          function () { b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy'; }, 1500); },
+          function () { b.textContent = 'Select & copy'; });
+      });
+    });
+    steps[0].classList.add('in');
+  })();
   </script>
 </body>
 </html>
